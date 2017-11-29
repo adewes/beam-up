@@ -12,7 +12,6 @@ class JinjaProcessor(BaseProcessor):
         env = Environment(loader=choice_loader)
         env.filters['href'] = self.href
         env.filters['file'] = self.file
-        env.filters['scss'] = self.scss
         env.filters['translate'] = self.translate
         return env
 

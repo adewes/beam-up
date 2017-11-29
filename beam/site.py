@@ -2,10 +2,24 @@ from .settings import SETTINGS
 from urllib.parse import urlparse
 import datetime
 import shutil
+import copy
 import math
 import os
 
 from beam.config import load_config
+
+def update(d, ud, overwrite=True):
+    for key, value in ud.items():
+        if key not in d:
+            d[key] = value
+        elif isinstance(value, dict):
+            update(d[key], value, overwrite=overwrite)
+        elif isinstance(value, list) and isinstance(d[key], list):
+            d[key] += value
+        else:
+            if key in d and not overwrite:
+                return
+            d[key] = value
 
 class Site(object):
 
@@ -14,12 +28,15 @@ class Site(object):
     """
 
     def __init__(self, config):
-        self.config = config
+        self.config = copy.deepcopy(config)
+        self._original_config = config
         self.processors = SETTINGS['processors']
         self.loaders = SETTINGS['loaders']
         self._static_paths = None
         self._theme_config = None
         self._translations = None
+
+        self.process_config()
 
     @property
     def title(self):
@@ -70,7 +87,14 @@ class Site(object):
     def theme_path(self):
         return self.config.get('theme-path', 'theme')
 
-    def translate(self, key, language):
+    def process_config(self):
+        if '$all' in self.config.get('languages', {}):
+            all_params = self.config['languages']['$all']
+            del self.config['languages']['$all']
+            for language, params in self.config['languages'].items():
+                update(params, all_params)
+
+    def translate(self, language, key):
         translations = self.translations
         if not key in translations:
             raise ValueError("No translations for key {}".format(key))
@@ -105,9 +129,10 @@ class Site(object):
             obj = obj.copy()
             if not 'src' in obj:
                 raise ValueError("No source given!")
+            if not 'slug' in obj:
+                obj['slug'] = ''.join(os.path.basename(obj['src']).split('.')[:-1])
             if not 'dst' in obj:
-                basename = ''.join(os.path.basename(obj['src']).split('.')[:-1])
-                obj['dst'] = os.path.join(self.get_language_prefix(language), prefix, basename)+'.html'
+                obj['dst'] = os.path.join(self.get_language_prefix(language), prefix, obj['slug'])+'.html'
             if obj['src'].find('://') == -1:
                 obj['src'] = 'file://{}'.format(obj['src'])
             if not 'type' in obj:
@@ -171,8 +196,8 @@ class Site(object):
         full_path = self.resolve_path(path)
         return os.path.join(self.site_path, 'static', path)
 
-    def href(self, url):
-        link = self.get_link(url)
+    def href(self, language, url):
+        link = self.get_link(language, url)
         return link
 
     def scss(self, filename):
@@ -204,19 +229,22 @@ class Site(object):
     def build_links(self, pages_by_language, articles_by_language):
         self.links = {}
         for language, pages in pages_by_language.items():
+            self.links[language] = {}
             for page in pages:
-                self.links[page['name']] = page['dst']
+                self.links[language][page['name']] = page['dst']
                 if page.get('index'):
-                    self.links[language] = page['dst']
+                    self.links[language][''] = page['dst']
         for language, articles in articles_by_language.items():
             for article in articles:
-                self.links[article['name']] = article['dst']
+                self.links[language][article['name']] = article['dst']
 
-    def get_filename(self, name):
-        return self.links[name]
+    def get_filename(self, language, name):
+        if '/' in name:
+            language, name = name.split('/')
+        return self.links[language][name]
 
-    def get_link(self, name):
-        return '{}{}'.format(self.site_path, self.get_filename(name))
+    def get_link(self, language, name):
+        return '{}{}'.format(self.site_path, self.get_filename(language, name))
 
     def build(self):
         pages_by_language = {}
@@ -244,7 +272,7 @@ class Site(object):
         }
         input = self.load(page)
         output = self.process(input, page, vars, language)
-        filename = self.get_filename(page['name'])
+        filename = self.get_filename(language, page['name'])
         self.write(output, filename)
 
     def sort_articles(self, articles):
@@ -279,7 +307,7 @@ class Site(object):
             self.get_language_prefix(language),
             self.get_blog_prefix(language),
             'index{}.html'.format('{}'.format(i+1) if i != 0 else ''))
-        self.links['blog-{}-{}'.format(language, i)] = filename
+        self.links[language]['blog-{}'.format(i)] = filename
         self.write(output, filename)
 
     def build_article(self, article, page, language):
@@ -290,10 +318,10 @@ class Site(object):
             'language' : self.config['languages'][language],
             'article' : article,
             'page' : page,
-            'index_link' : self.get_link('blog-{}-{}'.format(language, page)),
+            'index_link' : self.get_link(language, 'blog-{}'.format(page)),
             'site' : self
         }
         input = self.load(article)
         output = self.process(input, article, vars, language)
-        filename = self.get_filename(article['name'])
+        filename = self.get_filename(language, article['name'])
         self.write(output, filename)
