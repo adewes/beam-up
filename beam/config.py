@@ -6,7 +6,7 @@ def load_includes(config, include_path):
         d = {}
         for key, value in config.items():
             if key == '$include':
-                path = os.path.abspath(value)
+                path = os.path.abspath(os.path.join(include_path[-1], os.path.abspath(value)))
                 if path in include_path:
                     raise ValueError("Recursive import of {} (path: {})"\
                         .format(path, '->'\

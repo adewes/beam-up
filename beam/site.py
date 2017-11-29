@@ -5,6 +5,8 @@ import shutil
 import math
 import os
 
+from beam.config import load_config
+
 class Site(object):
 
     """
@@ -16,6 +18,8 @@ class Site(object):
         self.processors = SETTINGS['processors']
         self.loaders = SETTINGS['loaders']
         self._static_paths = None
+        self._theme_config = None
+        self._translations = None
 
     @property
     def title(self):
@@ -38,8 +42,41 @@ class Site(object):
         return self.config.get('path','/')
 
     @property
+    def translations(self):
+        if self._translations is not None:
+            return self._translations
+        translations = {}
+        for d in (self.config, self.theme_config):
+            if 'translations' in d:
+                for key, trs in d['translations'].items():
+                    if not key in translations:
+                        translations[key] = {}
+                    translations[key].update(trs)
+        self._translations = translations
+        return translations
+
+    @property
+    def theme_config(self):
+        if self._theme_config is not None:
+            return self._theme_config
+        config_path = os.path.join(self.theme_path, 'theme.yml')
+        if os.path.exists(config_path):
+            self._theme_config = load_config(config_path)
+        else:
+            self._theme_config = {}
+        return self._theme_config
+
+    @property
     def theme_path(self):
         return self.config.get('theme-path', 'theme')
+
+    def translate(self, key, language):
+        translations = self.translations
+        if not key in translations:
+            raise ValueError("No translations for key {}".format(key))
+        if not language in translations[key]:
+            raise ValueError("No translation for language {} and key {}".format(language, key))
+        return translations[key][language]
 
     def get_blog_prefix(self, language):
         return self.config['languages'][language].get('blog-path', 'blog')
@@ -152,7 +189,7 @@ class Site(object):
         path = params['src'][len(o.scheme)+3:]
         return loader.load(path)
 
-    def process(self, input, params, vars):
+    def process(self, input, params, vars, language):
         for processor_params in self.processors:
             if params['type'] == processor_params['type']:
                 break
@@ -160,7 +197,7 @@ class Site(object):
             raise TypeError("No processor for file type: {}".format(filename))
         output = input
         for processor_cls in processor_params['processors']:
-            processor = processor_cls(self, params)
+            processor = processor_cls(self, params, language)
             output = processor.process(output, vars)
         return output
 
@@ -206,7 +243,7 @@ class Site(object):
             'site' : self
         }
         input = self.load(page)
-        output = self.process(input, page, vars)
+        output = self.process(input, page, vars, language)
         filename = self.get_filename(page['name'])
         self.write(output, filename)
 
@@ -237,7 +274,7 @@ class Site(object):
             'n' : n,
             'language' : self.config['languages'][language]
         }
-        output = self.process(input, {'type' : 'html'}, vars)
+        output = self.process(input, {'type' : 'html'}, vars, language)
         filename = os.path.join(
             self.get_language_prefix(language),
             self.get_blog_prefix(language),
@@ -257,6 +294,6 @@ class Site(object):
             'site' : self
         }
         input = self.load(article)
-        output = self.process(input, article, vars)
+        output = self.process(input, article, vars, language)
         filename = self.get_filename(article['name'])
         self.write(output, filename)
