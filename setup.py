@@ -4,9 +4,9 @@ from setuptools import find_packages
 setup(
     name='beam',
     python_requires='>=3',
-    version='0.11',
+    version='0.12',
     author='Andreas Dewes - 7scientists',
-    author_email='andreas@7scientists.com',
+    author_email='andreas.dewes@7scientists.com',
     license='MIT',
     url='https://github.com/adewes/beam',
     packages=find_packages(),
