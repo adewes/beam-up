@@ -2,9 +2,9 @@ from distutils.core import setup
 from setuptools import find_packages
 
 setup(
-    name='beam',
+    name='beam-up',
     python_requires='>=3',
-    version='0.14',
+    version='0.15',
     author='Andreas Dewes - 7scientists',
     author_email='andreas.dewes@7scientists.com',
     license='MIT',
