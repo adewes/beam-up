@@ -4,7 +4,7 @@ from setuptools import find_packages
 setup(
     name='beam',
     python_requires='>=3',
-    version='0.13',
+    version='0.14',
     author='Andreas Dewes - 7scientists',
     author_email='andreas.dewes@7scientists.com',
     license='MIT',
