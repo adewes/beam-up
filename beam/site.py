@@ -97,9 +97,9 @@ class Site(object):
     def translate(self, language, key):
         translations = self.translations
         if not key in translations:
-            raise ValueError("No translations for key {}".format(key))
+            return "[no translation for key {}]".format(key)
         if not language in translations[key]:
-            raise ValueError("No translation for language {} and key {}".format(language, key))
+            return "[no translation for language {} and key {}]".format(language, key)
         return translations[key][language]
 
     def get_blog_prefix(self, language):
@@ -244,7 +244,10 @@ class Site(object):
         return self.links[language][name]
 
     def get_link(self, language, name):
-        return '{}{}'.format(self.site_path, self.get_filename(language, name))
+        try:
+            return '{}{}'.format(self.site_path, self.get_filename(language, name))
+        except KeyError:
+            return None
 
     def build(self):
         pages_by_language = {}
