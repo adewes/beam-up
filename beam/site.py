@@ -325,7 +325,7 @@ class Site(object):
             'language' : self.config['languages'][language],
             'article' : article,
             'page' : page,
-            'index_link' : self.get_link(language, 'blog-{}'.format(page)),
+            'index_link' : self.get_link(language, 'blog-{}'.format(page+1)),
             'site' : self
         }
         input = self.load(article)
