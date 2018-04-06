@@ -63,7 +63,7 @@ class Site(object):
         if self._translations is not None:
             return self._translations
         translations = {}
-        for d in (self.config, self.theme_config):
+        for d in (self.theme_config, self.config):
             if 'translations' in d:
                 for key, trs in d['translations'].items():
                     if not key in translations:
@@ -120,7 +120,8 @@ class Site(object):
     def parse_articles(self, articles, language):
         parsed_articles = self.parse_objs(articles, language, prefix=self.get_blog_prefix(language))
         for article in parsed_articles:
-            article['date'] = datetime.datetime.strptime(article['date'], '%Y-%m-%d %H:%M')
+            date_format = self.config['languages'][language].get('date-format', '%Y-%m-%d')
+            article['date'] = datetime.datetime.strptime(article['date'], date_format)
         return parsed_articles
 
     def parse_objs(self, objs, language, prefix=''):
@@ -310,7 +311,9 @@ class Site(object):
             self.get_language_prefix(language),
             self.get_blog_prefix(language),
             'index{}.html'.format('{}'.format(i+1) if i != 0 else ''))
-        self.links[language]['blog-{}'.format(i)] = filename
+        self.links[language]['blog-{}'.format(i+1)] = filename
+        if i == 0:
+            self.links[language]['blog'] = filename
         self.write(output, filename)
 
     def build_article(self, article, page, language):
