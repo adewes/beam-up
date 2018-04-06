@@ -4,7 +4,7 @@ from setuptools import find_packages
 setup(
     name='beam-up',
     python_requires='>=3',
-    version='0.2',
+    version='0.21',
     author='Andreas Dewes - 7scientists',
     author_email='andreas.dewes@7scientists.com',
     license='MIT',

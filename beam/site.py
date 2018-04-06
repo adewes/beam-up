@@ -121,7 +121,8 @@ class Site(object):
         parsed_articles = self.parse_objs(articles, language, prefix=self.get_blog_prefix(language))
         for article in parsed_articles:
             date_format = self.config['languages'][language].get('date-format', '%Y-%m-%d')
-            article['date'] = datetime.datetime.strptime(article['date'], date_format)
+            article['date'] = datetime.datetime.strptime(article['date'], '%Y-%m-%d %H:%M')
+            article['date-str'] = article['date'].strftime(date_format)
         return parsed_articles
 
     def parse_objs(self, objs, language, prefix=''):
