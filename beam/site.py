@@ -1,12 +1,15 @@
 from .settings import SETTINGS
 from urllib.parse import urlparse
 import datetime
+import logging
 import shutil
 import copy
 import math
 import os
 
 from beam.config import load_config
+
+logger = logging.getLogger(__name__)
 
 def update(d, ud, overwrite=True):
     for key, value in ud.items():
@@ -114,8 +117,57 @@ class Site(object):
     def get_build_path(self, path):
         return os.path.abspath(os.path.join(self.build_path, path))
 
+    def flatten_pages(self, pages):
+        """
+        Flattens the page hierarchy into a single list, replacing the
+        names to reflect the page structure.
+        """
+        flat_pages = []
+        def add_pages(pages, prefix):
+            for page in pages:
+                new_page = page.copy()
+                new_page['children'] = []
+                if prefix:
+                    new_page['name'] = '.'.join(prefix+[new_page['name']])
+                flat_pages.append(new_page)
+                if 'children' in page:
+                    add_pages(page['children'], prefix+[page['name']])
+        add_pages(pages, [])
+        return flat_pages 
+
     def parse_pages(self, pages, language):
-        return self.parse_objs(pages, language)
+        flat_pages = self.flatten_pages(pages)
+        pages = self.parse_objs(flat_pages, language)
+        page_index = {page['name'] : page for page in pages}
+        new_slugs = {}
+        #we parse child pages and generate appropriate links
+        for page in pages:
+            components = page['name'].split('.')
+            if len(components) > 1:
+                full_slug = []
+                for i in range(1, len(components)+1):
+                    name = '.'.join(components[:i])
+                    if name in page_index:
+                        full_slug.append(page_index[name]['slug'])
+                new_slugs[page['name']] = '/'.join(full_slug)
+                page['level'] = len(components)-1
+                parent = '.'.join(components[:-1])
+                if parent in page_index:
+                    parent_page = page_index[parent]
+                    page['parent'] = parent_page
+                    if not 'children' in parent_page:
+                        parent_page['children'] = []
+                    parent_page['children'].append(page)
+                else:
+                    logger.warning("No parent found for page {}".format(page['name']))
+            else:
+                page['level'] = 0
+        #we update the slugs for the child pages
+        for name, slug in new_slugs.items():
+            page = page_index[name]
+            page['slug'] = slug
+            page['dst'] = self.get_dst(page, language)
+        return pages
 
     def parse_articles(self, articles, language):
         parsed_articles = self.parse_objs(articles, language, prefix=self.get_blog_prefix(language))
@@ -125,24 +177,29 @@ class Site(object):
             article['date-str'] = article['date'].strftime(date_format)
         return parsed_articles
 
+    def get_dst(self, obj, language, prefix=''):
+        return os.path.join(self.get_language_prefix(language), prefix, obj['slug'])+'.html'
+
     def parse_objs(self, objs, language, prefix=''):
         parsed_objs = []
         for obj in objs:
             obj = obj.copy()
+            parsed_objs.append(obj)
             if not 'src' in obj:
-                raise ValueError("No source given!")
+                #this is just a category page without a source
+                continue
             if not 'slug' in obj:
                 obj['slug'] = ''.join(os.path.basename(obj['src']).split('.')[:-1])
             if not 'dst' in obj:
-                obj['dst'] = os.path.join(self.get_language_prefix(language), prefix, obj['slug'])+'.html'
+                obj['dst'] = self.get_dst(obj, language, prefix)
             if obj['src'].find('://') == -1:
                 obj['src'] = 'file://{}'.format(obj['src'])
+            #if not type is given, we use the extension to determine it
             if not 'type' in obj:
                 s = obj['src'].split('.')
                 if len(s) < 2:
                     raise ValueError
                 obj['type'] = s[-1]
-            parsed_objs.append(obj)
         return parsed_objs
 
     def write(self, content, path):
@@ -233,6 +290,8 @@ class Site(object):
         for language, pages in pages_by_language.items():
             self.links[language] = {}
             for page in pages:
+                if not 'src' in page:
+                    continue
                 self.links[language][page['name']] = page['dst']
                 if page.get('index'):
                     self.links[language][''] = page['dst']
@@ -241,8 +300,8 @@ class Site(object):
                 self.links[language][article['name']] = article['dst']
 
     def get_filename(self, language, name):
-        if '/' in name:
-            language, name = name.split('/')
+        if ':' in name:
+            language, name = name.split(':', 1)
         return self.links[language][name]
 
     def get_link(self, language, name):
@@ -264,14 +323,19 @@ class Site(object):
         self.copy_static_files()
         self.build_links(pages_by_language, articles_by_language)
         for language, articles in articles_by_language.items():
-            self.build_blog(articles, language)
+            pages = pages_by_language[language]
+            self.build_blog(articles, language, pages)
         for language, pages in pages_by_language.items():
             for page in pages:
-                self.build_page(page, language)
+                if not 'src' in page:
+                    continue
+                self.build_page(page, language, pages)
 
-    def build_page(self, page, language):
+    def build_page(self, page, language, pages):
         vars = {
             'language' : self.config['languages'][language],
+            'languages' : self.config['languages'],
+            'pages' : pages,
             'page' : page,
             'site' : self
         }
@@ -287,25 +351,27 @@ class Site(object):
         app = self.config.get('articles-per-page', 10)
         return [articles[i*app:(i+1)*app] for i in range(math.ceil(len(articles)/app))]
 
-    def build_blog(self, articles, language):
+    def build_blog(self, articles, language, pages):
         """
         Build the indexes, meta-pages and articles.
         """
-        pages = self.paginate_articles(self.sort_articles(articles))
-        for i, page in enumerate(pages):
-            self.build_index_site(i, len(pages), articles, page, language)
-            for article in page:
-                self.build_article(article, i, language)
+        blog_pages = self.paginate_articles(self.sort_articles(articles))
+        for i, blog_page in enumerate(blog_pages):
+            self.build_index_site(i, len(blog_pages), articles, blog_page, language, pages)
+            for article in blog_page:
+                self.build_article(article, i, language, pages)
 
-    def build_index_site(self, i, n, articles, page, language):
+    def build_index_site(self, i, n, articles, blog_page, language, pages):
         input = "{% extends('index.html') %}"
         vars = {
-            'page' : page,
+            'blog_page' : blog_page,
+            'pages' : pages,
             'site' : self,
             'articles' : articles,
             'i' : i,
             'n' : n,
-            'language' : self.config['languages'][language]
+            'language' : self.config['languages'][language],
+            'languages' : self.config['languages'],
         }
         output = self.process(input, {'type' : 'html'}, vars, language)
         filename = os.path.join(
@@ -317,14 +383,16 @@ class Site(object):
             self.links[language]['blog'] = filename
         self.write(output, filename)
 
-    def build_article(self, article, page, language):
+    def build_article(self, article, page, language, pages):
         """
         Build an individual blog article.
         """
         vars = {
             'language' : self.config['languages'][language],
+            'languages' : self.config['languages'],
+            'pages' : pages,
             'article' : article,
-            'page' : page,
+            'blog_page' : page,
             'index_link' : self.get_link(language, 'blog-{}'.format(page+1)),
             'site' : self
         }
