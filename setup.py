@@ -4,7 +4,7 @@ from setuptools import find_packages
 setup(
     name='beam-up',
     python_requires='>=3',
-    version='0.31',
+    version='0.32',
     author='Andreas Dewes - 7scientists',
     author_email='andreas.dewes@7scientists.com',
     license='MIT',
@@ -12,7 +12,7 @@ setup(
     packages=find_packages(),
     package_data={'': ['*.ini']},
     include_package_data=True,
-    install_requires=['click', 'pyyaml', 'markdown2', 'jinja2'],
+    install_requires=['click', 'pyyaml', 'markdown2', 'jinja2', 'pygments'],
     zip_safe=False,
     entry_points={
         'console_scripts': [

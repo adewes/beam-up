@@ -2,8 +2,18 @@ from .base import BaseProcessor
 
 from jinja2 import Environment, FileSystemLoader, ChoiceLoader, DictLoader
 
+
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import HtmlFormatter
+
 class JinjaProcessor(BaseProcessor):
 
+    def highlight_styles(self, language=None):
+        return '<style type="text/css">{}</style>'.format(HtmlFormatter().get_style_defs('.highlight'))
+
+    def highlight(self, code, language=None):
+        return highlight(code, PythonLexer(), HtmlFormatter())
 
     def get_jinja_env(self, input):
         dict_loader = DictLoader({'input' : input})
@@ -12,6 +22,8 @@ class JinjaProcessor(BaseProcessor):
         env = Environment(loader=choice_loader)
         env.filters['href'] = self.href
         env.filters['file'] = self.file
+        env.filters['highlight'] = self.highlight
+        env.filters['highlight_styles'] = self.highlight_styles
         env.filters['translate'] = self.translate
         return env
 
