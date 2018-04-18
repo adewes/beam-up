@@ -4,16 +4,22 @@ from jinja2 import Environment, FileSystemLoader, ChoiceLoader, DictLoader
 
 
 from pygments import highlight
-from pygments.lexers import PythonLexer
+from pygments.styles import get_style_by_name
+from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
 
 class JinjaProcessor(BaseProcessor):
 
-    def highlight_styles(self, language=None):
-        return '<style type="text/css">{}</style>'.format(HtmlFormatter().get_style_defs('.highlight'))
+    def highlight_styles(self, code, style_name='monokai'):
+        style = get_style_by_name(style_name)
+        return '<style type="text/css">{}</style>'.format(HtmlFormatter(style=style).get_style_defs('.highlight .{}'.format(style_name)))
 
-    def highlight(self, code, language=None):
-        return highlight(code, PythonLexer(), HtmlFormatter())
+    def highlight(self, code, language='python', style_name='monokai', strip=True):
+        lexer = get_lexer_by_name(language)
+        style = get_style_by_name(style_name)
+        if strip:
+            code = code.strip()
+        return highlight(code, lexer, HtmlFormatter(style=style, cssclass='{}'.format(style_name)))
 
     def get_jinja_env(self, input):
         dict_loader = DictLoader({'input' : input})

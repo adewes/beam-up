@@ -1,10 +1,8 @@
 from .settings import SETTINGS
 from urllib.parse import urlparse
-import datetime
+import importlib
 import logging
-import shutil
 import copy
-import math
 import os
 
 from beam.config import load_config
@@ -33,12 +31,13 @@ class Site(object):
     def __init__(self, config):
         self.config = copy.deepcopy(config)
         self._original_config = config
-        self.processors = SETTINGS['processors']
-        self.loaders = SETTINGS['loaders']
-        self._static_paths = None
+        self.settings = {
+            'processors' : SETTINGS['processors'].copy(),
+            'loaders' : SETTINGS['loaders'].copy(),
+            'builders' : SETTINGS['builders'].copy(),
+        }
         self._theme_config = None
         self._translations = None
-
         self.process_config()
 
     @property
@@ -96,6 +95,8 @@ class Site(object):
             del self.config['languages']['$all']
             for language, params in self.config['languages'].items():
                 update(params, all_params)
+        if 'builders' in self.config:
+            self.settings['builders'].extend(self.config['builders'])
 
     def translate(self, language, key):
         translations = self.translations
@@ -105,9 +106,6 @@ class Site(object):
             return "[no translation for language {} and key {}]".format(language, key)
         return translations[key][language]
 
-    def get_blog_prefix(self, language):
-        return self.config['languages'][language].get('blog-path', 'blog')
-
     def get_language_prefix(self, language):
         return self.config['languages'][language].get('prefix', language)
 
@@ -116,66 +114,6 @@ class Site(object):
 
     def get_build_path(self, path):
         return os.path.abspath(os.path.join(self.build_path, path))
-
-    def flatten_pages(self, pages):
-        """
-        Flattens the page hierarchy into a single list, replacing the
-        names to reflect the page structure.
-        """
-        flat_pages = []
-        def add_pages(pages, prefix):
-            for page in pages:
-                new_page = page.copy()
-                new_page['children'] = []
-                if prefix:
-                    new_page['name'] = '.'.join(prefix+[new_page['name']])
-                flat_pages.append(new_page)
-                if 'children' in page:
-                    add_pages(page['children'], prefix+[page['name']])
-        add_pages(pages, [])
-        return flat_pages 
-
-    def parse_pages(self, pages, language):
-        flat_pages = self.flatten_pages(pages)
-        pages = self.parse_objs(flat_pages, language)
-        page_index = {page['name'] : page for page in pages}
-        new_slugs = {}
-        #we parse child pages and generate appropriate links
-        for page in pages:
-            components = page['name'].split('.')
-            if len(components) > 1:
-                full_slug = []
-                for i in range(1, len(components)+1):
-                    name = '.'.join(components[:i])
-                    if name in page_index:
-                        full_slug.append(page_index[name]['slug'])
-                new_slugs[page['name']] = '/'.join(full_slug)
-                page['level'] = len(components)-1
-                parent = '.'.join(components[:-1])
-                if parent in page_index:
-                    parent_page = page_index[parent]
-                    page['parent'] = parent_page
-                    if not 'children' in parent_page:
-                        parent_page['children'] = []
-                    parent_page['children'].append(page)
-                else:
-                    logger.warning("No parent found for page {}".format(page['name']))
-            else:
-                page['level'] = 0
-        #we update the slugs for the child pages
-        for name, slug in new_slugs.items():
-            page = page_index[name]
-            page['slug'] = slug
-            page['dst'] = self.get_dst(page, language)
-        return pages
-
-    def parse_articles(self, articles, language):
-        parsed_articles = self.parse_objs(articles, language, prefix=self.get_blog_prefix(language))
-        for article in parsed_articles:
-            date_format = self.config['languages'][language].get('date-format', '%Y-%m-%d')
-            article['date'] = datetime.datetime.strptime(article['date'], '%Y-%m-%d %H:%M')
-            article['date-str'] = article['date'].strftime(date_format)
-        return parsed_articles
 
     def get_dst(self, obj, language, prefix=''):
         return os.path.join(self.get_language_prefix(language), prefix, obj['slug'])+'.html'
@@ -210,51 +148,6 @@ class Site(object):
         with open(full_path, 'w') as output_file:
             output_file.write(content)
 
-    def get_static_paths(self):
-        if self._static_paths is not None:
-            return self._static_paths
-        paths = [os.path.join(self.src_path, 'static'),
-                os.path.join(self.theme_path, 'static')]
-        for language in self.config.get('languages', {}):
-            static_path = os.path.join(self.src_path, '{}/static'.format(language))
-            if os.path.exists(static_path):
-                paths.append(static_path)
-        self._static_paths = paths
-        return paths
-
-    def resolve_path(self, path):
-        dirs = self.get_static_paths()
-        for dir in dirs:
-            full_path = os.path.join(dir, path)
-            if os.path.exists(full_path):
-                return full_path
-        raise IOError("Path {} not found!".format(path))
-
-    def copy_static_files(self):
-        dirs = self.get_static_paths()
-        for dir in dirs:
-            for path, dirs, files in os.walk(dir):
-                relpath = os.path.relpath(path, dir)
-                for dirname in dirs:
-                    dest_path = os.path.join(self.build_path, 'static', relpath, dirname)
-                    if os.path.exists(dest_path) and not os.path.isdir(dest_path):
-                        shutil.rmtree(dest_path)
-                    elif not os.path.exists(dest_path):
-                        os.makedirs(dest_path)
-                for filename in files:
-                    src_path = os.path.join(path, filename)
-                    dest_path = os.path.join(self.build_path, 
-                                             'static',
-                                             relpath,
-                                             filename)
-                    if not os.path.exists(dest_path) or \
-                      os.stat(dest_path).st_mtime < os.stat(src_path).st_mtime:
-                        shutil.copy(src_path, dest_path)
-
-    def copy(self, path):
-        full_path = self.resolve_path(path)
-        return os.path.join(self.site_path, 'static', path)
-
     def href(self, language, url):
         link = self.get_link(language, url)
         return link
@@ -264,7 +157,7 @@ class Site(object):
 
     def load(self, params):
         o = urlparse(params['src'])
-        for loader_params in self.loaders:
+        for loader_params in self.settings['loaders']:
             if loader_params['scheme'] == o.scheme:
                 break
         else:
@@ -274,30 +167,22 @@ class Site(object):
         return loader.load(path)
 
     def process(self, input, params, vars, language):
-        for processor_params in self.processors:
+        for processor_params in self.settings['processors']:
             if params['type'] == processor_params['type']:
                 break
         else:
             raise TypeError("No processor for file type: {}".format(filename))
         output = input
+        full_vars = {
+            'language' : self.config['languages'][language],
+            'languages' : self.config['languages'],
+        }
+        full_vars.update(self.vars[language])
+        full_vars.update(vars)
         for processor_cls in processor_params['processors']:
             processor = processor_cls(self, params, language)
-            output = processor.process(output, vars)
+            output = processor.process(output, full_vars)
         return output
-
-    def build_links(self, pages_by_language, articles_by_language):
-        self.links = {}
-        for language, pages in pages_by_language.items():
-            self.links[language] = {}
-            for page in pages:
-                if not 'src' in page:
-                    continue
-                self.links[language][page['name']] = page['dst']
-                if page.get('index'):
-                    self.links[language][''] = page['dst']
-        for language, articles in articles_by_language.items():
-            for article in articles:
-                self.links[language][article['name']] = article['dst']
 
     def get_filename(self, language, name):
         if ':' in name:
@@ -310,93 +195,52 @@ class Site(object):
         except KeyError:
             return None
 
+    def request(self, name, *args, **kwargs):
+        if not name in self.providers:
+            raise ValueError("No provider of type {} found!".format(name))
+        return self.providers[name](*args, **kwargs)
+
+    def init_builders(self):
+        self.links = {}
+        self.vars = {}
+        self.providers = {}
+        self.files = []
+        self.builders = []
+
+        for builder_config in self.settings['builders']:
+            logging.info("Initializing builder {}...".format(builder_config['name']))
+            builder_class = builder_config['builder']
+            if isinstance(builder_class, str):
+                components = builder_class.split('.')
+                builder_module = '.'.join(components[:-1])
+                builder_class_str = components[-1]
+                try:
+                    module = importlib.import_module(builder_module)
+                    builder_class = getattr(module, builder_class_str)
+                except ImportError:
+                    raise
+            builder = builder_class(self)
+            self.providers.update(builder.providers)
+            self.builders.append(builder)
+
     def build(self):
-        pages_by_language = {}
-        articles_by_language = {}
-        links = {}
+
+        self.init_builders()
+
         for language, params in self.config.get('languages', {}).items():
-            params['name'] = language
-            pages = self.parse_pages(params.get('pages', []), language)
-            pages_by_language[language] = pages
-            articles = self.parse_articles(params.get('articles', []), language)
-            articles_by_language[language] = articles
-        self.copy_static_files()
-        self.build_links(pages_by_language, articles_by_language)
-        for language, articles in articles_by_language.items():
-            pages = pages_by_language[language]
-            self.build_blog(articles, language, pages)
-        for language, pages in pages_by_language.items():
-            for page in pages:
-                if not 'src' in page:
-                    continue
-                self.build_page(page, language, pages)
+            self.links[language] = {}
+            self.vars[language] = {}
+            for builder in self.builders:
+                params['name'] = language
+                #here the builders create links and other structures
+                result = builder.index(params, language)
+                self.links[language].update(result.get('links', {}))
+                self.vars[language].update(result.get('vars', {}))
 
-    def build_page(self, page, language, pages):
-        vars = {
-            'language' : self.config['languages'][language],
-            'languages' : self.config['languages'],
-            'pages' : pages,
-            'page' : page,
-            'site' : self
-        }
-        input = self.load(page)
-        output = self.process(input, page, vars, language)
-        filename = self.get_filename(language, page['name'])
-        self.write(output, filename)
+        for builder in self.builders:
+            #now the builder "build" their components
+            builder.build()
 
-    def sort_articles(self, articles):
-        return sorted(articles, key=lambda x : x.get('date',x.get('title')))
-
-    def paginate_articles(self, articles):
-        app = self.config.get('articles-per-page', 10)
-        return [articles[i*app:(i+1)*app] for i in range(math.ceil(len(articles)/app))]
-
-    def build_blog(self, articles, language, pages):
-        """
-        Build the indexes, meta-pages and articles.
-        """
-        blog_pages = self.paginate_articles(self.sort_articles(articles))
-        for i, blog_page in enumerate(blog_pages):
-            self.build_index_site(i, len(blog_pages), articles, blog_page, language, pages)
-            for article in blog_page:
-                self.build_article(article, i, language, pages)
-
-    def build_index_site(self, i, n, articles, blog_page, language, pages):
-        input = "{% extends('index.html') %}"
-        vars = {
-            'blog_page' : blog_page,
-            'pages' : pages,
-            'site' : self,
-            'articles' : articles,
-            'i' : i,
-            'n' : n,
-            'language' : self.config['languages'][language],
-            'languages' : self.config['languages'],
-        }
-        output = self.process(input, {'type' : 'html'}, vars, language)
-        filename = os.path.join(
-            self.get_language_prefix(language),
-            self.get_blog_prefix(language),
-            'index{}.html'.format('{}'.format(i+1) if i != 0 else ''))
-        self.links[language]['blog-{}'.format(i+1)] = filename
-        if i == 0:
-            self.links[language]['blog'] = filename
-        self.write(output, filename)
-
-    def build_article(self, article, page, language, pages):
-        """
-        Build an individual blog article.
-        """
-        vars = {
-            'language' : self.config['languages'][language],
-            'languages' : self.config['languages'],
-            'pages' : pages,
-            'article' : article,
-            'blog_page' : page,
-            'index_link' : self.get_link(language, 'blog-{}'.format(page+1)),
-            'site' : self
-        }
-        input = self.load(article)
-        output = self.process(input, article, vars, language)
-        filename = self.get_filename(language, article['name'])
-        self.write(output, filename)
+        for builder in self.builders:
+            #now builders can do some post-processing
+            builder.postprocess()
