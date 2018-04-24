@@ -1,8 +1,8 @@
 
 class BaseProcessor(object):
 
-    def translate(self, key):
-        return self.site.translate(self.language, key)
+    def translate(self, key, *args, **kwargs):
+        return self.site.translate(self.language, key, *args, **kwargs)
 
     def file(self, filename):
         return self.site.request('static_file', filename)

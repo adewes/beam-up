@@ -1,5 +1,6 @@
 from .settings import SETTINGS
 from urllib.parse import urlparse
+from collections import defaultdict
 import importlib
 import logging
 import copy
@@ -57,7 +58,7 @@ class Site(object):
         return self.config.get('build-path', 'build')
 
     @property
-    def site_path(self):
+    def path(self):
         return self.config.get('path','/')
 
     @property
@@ -98,13 +99,13 @@ class Site(object):
         if 'builders' in self.config:
             self.settings['builders'].extend(self.config['builders'])
 
-    def translate(self, language, key):
+    def translate(self, language, key, *args, **kwargs):
         translations = self.translations
         if not key in translations:
             return "[no translation for key {}]".format(key)
         if not language in translations[key]:
             return "[no translation for language {} and key {}]".format(language, key)
-        return translations[key][language]
+        return translations[key][language].format(*args, **kwargs)
 
     def get_language_prefix(self, language):
         return self.config['languages'][language].get('prefix', language)
@@ -115,8 +116,8 @@ class Site(object):
     def get_build_path(self, path):
         return os.path.abspath(os.path.join(self.build_path, path))
 
-    def get_dst(self, obj, language, prefix=''):
-        return os.path.join(self.get_language_prefix(language), prefix, obj['slug'])+'.html'
+    def get_dst(self, slug, language, prefix=''):
+        return os.path.join(self.get_language_prefix(language), prefix, slug)+'.html'
 
     def parse_objs(self, objs, language, prefix=''):
         parsed_objs = []
@@ -129,7 +130,7 @@ class Site(object):
             if not 'slug' in obj:
                 obj['slug'] = ''.join(os.path.basename(obj['src']).split('.')[:-1])
             if not 'dst' in obj:
-                obj['dst'] = self.get_dst(obj, language, prefix)
+                obj['dst'] = self.get_dst(obj['slug'], language, prefix)
             if obj['src'].find('://') == -1:
                 obj['src'] = 'file://{}'.format(obj['src'])
             #if not type is given, we use the extension to determine it
@@ -155,15 +156,15 @@ class Site(object):
     def scss(self, filename):
         return filename
 
-    def load(self, params):
-        o = urlparse(params['src'])
+    def load(self, src):
+        o = urlparse(src)
         for loader_params in self.settings['loaders']:
             if loader_params['scheme'] == o.scheme:
                 break
         else:
             raise TypeError("No loader for scheme: {}".format(o.scheme))
         loader = loader_params['loader'](self)
-        path = params['src'][len(o.scheme)+3:]
+        path = src[len(o.scheme)+3:]
         return loader.load(path)
 
     def process(self, input, params, vars, language):
@@ -176,6 +177,7 @@ class Site(object):
         full_vars = {
             'language' : self.config['languages'][language],
             'languages' : self.config['languages'],
+            'site' : self,
         }
         full_vars.update(self.vars[language])
         full_vars.update(vars)
@@ -191,7 +193,7 @@ class Site(object):
 
     def get_link(self, language, name):
         try:
-            return '{}{}'.format(self.site_path, self.get_filename(language, name))
+            return '{}{}'.format(self.path, self.get_filename(language, name))
         except KeyError:
             return None
 
@@ -204,6 +206,7 @@ class Site(object):
         self.links = {}
         self.vars = {}
         self.providers = {}
+        self.addons = defaultdict(list)
         self.files = []
         self.builders = []
 
@@ -221,6 +224,9 @@ class Site(object):
                     raise
             builder = builder_class(self)
             self.providers.update(builder.providers)
+            if builder.addons:
+                for key, addon in builder.addons.items():
+                    self.addons[key].append(addon)
             self.builders.append(builder)
 
     def build(self):

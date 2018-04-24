@@ -21,5 +21,6 @@ class BaseBuilder(object):
     def __init__(self, site):
         self.site = site
         self.providers = {}
+        self.addons = {}
 
     

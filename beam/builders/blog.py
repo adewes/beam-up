@@ -85,7 +85,7 @@ class BlogBuilder(BaseBuilder):
             'blog_page' : page,
             'index_link' : self.site.get_link(language, 'blog-{}'.format(page+1)),
         }
-        input = self.site.load(article)
+        input = self.site.load(article['src'])
         output = self.site.process(input, article, vars, language)
         filename = self.site.get_filename(language, article['name'])
         self.site.write(output, filename)

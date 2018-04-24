@@ -46,7 +46,7 @@ class StaticFilesBuilder(BaseBuilder):
 
     def get_path(self, path):
         full_path = self.resolve_path(path)
-        return os.path.join(self.site.site_path, 'static', path)
+        return os.path.join(self.site.path, 'static', path)
 
     def get_static_paths(self):
         if self._static_paths is not None:

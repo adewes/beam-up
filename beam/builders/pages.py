@@ -38,7 +38,7 @@ class PagesBuilder(BaseBuilder):
         vars = {
             'page' : page,
         }
-        input = self.site.load(page)
+        input = self.site.load(page['src'])
         output = self.site.process(input, page, vars, language)
         filename = self.site.get_filename(language, page['name'])
         self.site.write(output, filename)
@@ -92,5 +92,5 @@ class PagesBuilder(BaseBuilder):
         for name, slug in new_slugs.items():
             page = page_index[name]
             page['slug'] = slug
-            page['dst'] = self.site.get_dst(page, language)
+            page['dst'] = self.site.get_dst(slug, language)
         return pages

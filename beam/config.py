@@ -6,13 +6,15 @@ def load_includes(config, include_path):
         d = {}
         for key, value in config.items():
             if key == '$include':
-                path = os.path.abspath(os.path.join(include_path[-1], os.path.abspath(value)))
+                path = os.path.abspath(os.path.join(os.path.dirname(include_path[-1]), value))
                 if path in include_path:
                     raise ValueError("Recursive import of {} (path: {})"\
                         .format(path, '->'\
                         .join(['"{}"'\
                         .format(s) for s in include_path])))
-                d.update(load_config(path, include_path=include_path+[path]))
+                nd = load_config(path, include_path=include_path+[path])
+                if nd:
+                    d.update(nd)
             else:
                 d[key] = load_includes(value, include_path=include_path)
         return d
