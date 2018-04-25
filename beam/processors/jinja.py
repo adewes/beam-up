@@ -2,10 +2,14 @@ from .base import BaseProcessor
 
 from jinja2 import Environment, FileSystemLoader, ChoiceLoader, DictLoader
 
-from pygments import highlight
-from pygments.styles import get_style_by_name
-from pygments.lexers import get_lexer_by_name
-from pygments.formatters import HtmlFormatter
+try:
+    from pygments import highlight
+    from pygments.styles import get_style_by_name
+    from pygments.lexers import get_lexer_by_name
+    from pygments.formatters import HtmlFormatter
+    with_pygments = True
+except ImportError:
+    with_pygments = False
 
 try:
     from bs4 import BeautifulSoup as bs
@@ -33,8 +37,9 @@ class JinjaProcessor(BaseProcessor):
         env = Environment(loader=choice_loader)
         env.filters['href'] = self.href
         env.filters['file'] = self.file
-        env.filters['highlight'] = self.highlight
-        env.filters['highlight_styles'] = self.highlight_styles
+        if with_pygments:
+            env.filters['highlight'] = self.highlight
+            env.filters['highlight_styles'] = self.highlight_styles
         env.filters['translate'] = self.translate
         for filters in self.site.addons['jinja-filters']:
             for name, f in filters:

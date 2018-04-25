@@ -90,9 +90,9 @@ class Site(object):
 
     def translate(self, language, key, *args, **kwargs):
         translations = self.translations
-        if not key in translations:
+        if not key in translations or not translations[key]:
             return "[no translation for key {}]".format(key)
-        if not language in translations[key]:
+        if not language in translations[key] or not translations[key][language]:
             return "[no translation for language {} and key {}]".format(language, key)
         return translations[key][language].format(*args, **kwargs)
 
