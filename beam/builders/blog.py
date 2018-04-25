@@ -22,24 +22,24 @@ class BlogBuilder(BaseBuilder):
             },
         }
 
-    def get_index_filename(self, language, i):
+    def get_index_slug(self, language, i):
         return os.path.join(
-            self.site.get_language_prefix(language),
             self.get_blog_prefix(language),
-            'index{}.html'.format('{}'.format(i+1) if i != 0 else '')
+            'index{}'.format('{}'.format(i+1) if i != 0 else '')
         )
 
     def create_links(self, blog_pages, articles, language):
         links = {}
 
         for i, blog_page in enumerate(blog_pages):
-            filename = self.get_index_filename(language, i)
-            links['blog-{}'.format(i+1)] = filename
+            slug = self.get_index_slug(language, i)
+            link = self.site.get_link_dst(slug, language)
+            links['blog-{}'.format(i+1)] = link
             if i == 0:
-                links['blog'] = filename
+                links['blog'] = link
 
             for article in articles:
-                links[article['name']] = article['dst']
+                links[article['name']] = article['link']
         return links
 
     def build(self):
@@ -72,9 +72,10 @@ class BlogBuilder(BaseBuilder):
             'i' : i,
             'n' : n,
         }
-        filename = self.get_index_filename(language, i)
+        slug = self.get_index_slug(language, i)
+        dst = self.site.get_dst(slug, language)
         output = self.site.process(input, {'type' : 'html'}, vars, language)
-        self.site.write(output, filename)
+        self.site.write(output, dst)
 
     def build_article(self, article, page, language):
         """
@@ -87,8 +88,8 @@ class BlogBuilder(BaseBuilder):
         }
         input = self.site.load(article['src'])
         output = self.site.process(input, article, vars, language)
-        filename = self.site.get_filename(language, article['name'])
-        self.site.write(output, filename)
+        dst = self.site.get_dst(article['slug'], language)
+        self.site.write(output, dst)
 
     def parse_articles(self, articles, language):
         parsed_articles = self.site.parse_objs(articles, language, prefix=self.get_blog_prefix(language))

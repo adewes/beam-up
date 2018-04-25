@@ -22,9 +22,9 @@ class PagesBuilder(BaseBuilder):
         for page in pages:
             if not 'src' in page:
                 continue
-            links[page['name']] = page['dst']
+            links[page['name']] = self.site.get_link_dst(page['slug'], language)
             if page.get('index'):
-                links[''] = page['dst']
+                links[''] = self.site.get_link_dst(page['slug'], language)
         return links
 
     def build(self):
@@ -40,8 +40,7 @@ class PagesBuilder(BaseBuilder):
         }
         input = self.site.load(page['src'])
         output = self.site.process(input, page, vars, language)
-        filename = self.site.get_filename(language, page['name'])
-        self.site.write(output, filename)
+        self.site.write(output, page['dst'])
 
     def flatten_pages(self, pages):
         """
@@ -93,4 +92,5 @@ class PagesBuilder(BaseBuilder):
             page = page_index[name]
             page['slug'] = slug
             page['dst'] = self.site.get_dst(slug, language)
+            page['link'] = self.site.get_link_dst(slug, language)
         return pages

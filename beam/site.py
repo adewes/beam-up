@@ -1,4 +1,5 @@
 from .settings import SETTINGS
+from .config import update
 from urllib.parse import urlparse
 from collections import defaultdict
 import importlib
@@ -10,18 +11,6 @@ from beam.config import load_config
 
 logger = logging.getLogger(__name__)
 
-def update(d, ud, overwrite=True):
-    for key, value in ud.items():
-        if key not in d:
-            d[key] = value
-        elif isinstance(value, dict):
-            update(d[key], value, overwrite=overwrite)
-        elif isinstance(value, list) and isinstance(d[key], list):
-            d[key] += value
-        else:
-            if key in d and not overwrite:
-                return
-            d[key] = value
 
 class Site(object):
 
@@ -110,14 +99,26 @@ class Site(object):
     def get_language_prefix(self, language):
         return self.config['languages'][language].get('prefix', language)
 
+    def get_language_link_prefix(self, language):
+        return self.config['languages'][language].get('link-prefix', self.get_language_prefix(language))
+
     def get_src_path(self, path):
         return os.path.abspath(os.path.join(self.src_path, path))
 
     def get_build_path(self, path):
         return os.path.abspath(os.path.join(self.build_path, path))
 
-    def get_dst(self, slug, language, prefix=''):
-        return os.path.join(self.get_language_prefix(language), prefix, slug)+'.html'
+    def get_link_dst(self, slug, language, prefix='', extension='html'):
+        suffix = ''
+        if extension:
+            suffix = '.{}'.format(extension)
+        return os.path.join(self.get_language_link_prefix(language), prefix, slug)+suffix
+
+    def get_dst(self, slug, language, prefix='', extension='html'):
+        suffix = ''
+        if extension:
+            suffix = '.{}'.format(extension)
+        return os.path.join(self.get_language_prefix(language), prefix, slug)+suffix
 
     def parse_objs(self, objs, language, prefix=''):
         parsed_objs = []
@@ -127,10 +128,13 @@ class Site(object):
             if not 'src' in obj:
                 #this is just a category page without a source
                 continue
+            extension = obj.get('extension', 'html')
             if not 'slug' in obj:
                 obj['slug'] = ''.join(os.path.basename(obj['src']).split('.')[:-1])
             if not 'dst' in obj:
-                obj['dst'] = self.get_dst(obj['slug'], language, prefix)
+                obj['dst'] = self.get_dst(obj['slug'], language, prefix, extension=extension)
+            if not 'link' in obj:
+                obj['link'] = self.get_link_dst(obj['slug'], language, prefix, extension=extension)
             if obj['src'].find('://') == -1:
                 obj['src'] = 'file://{}'.format(obj['src'])
             #if not type is given, we use the extension to determine it

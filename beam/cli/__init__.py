@@ -1,3 +1,4 @@
 from .up import up
+from .config import config
 
-commands = [up]
+commands = [up, config]
