@@ -12,6 +12,17 @@ template = """
 class MarkdownProcessor(BaseProcessor):
 
     def process(self, input, vars):
+        #we add an offset if requested
+        if self.params.get('h-offset') is not None:
+            offset = self.params['h-offset']
+            lines = input.split('\n')
+            input = ""
+            for line in lines:
+                if line.startswith('#'):
+                    line = '#'*offset+line
+                input += line + "\n"
         result = markdown2.markdown(input, extras=['footnotes','fenced-code-blocks'])
+        if self.params.get('bare'):
+            return result
         template_result = template.format(template='article.html', content=result)
         return template_result
