@@ -38,6 +38,8 @@ class PagesBuilder(BaseBuilder):
         vars = {
             'page' : page,
         }
+        if 'title' in page:
+            vars['title'] = page['title']
         input = self.site.load(page['src'])
         output = self.site.process(input, page, vars, language)
         self.site.write(output, page['dst'])

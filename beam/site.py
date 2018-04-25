@@ -181,6 +181,7 @@ class Site(object):
         full_vars = {
             'language' : self.config['languages'][language],
             'languages' : self.config['languages'],
+            'lang' : language,
             'site' : self,
         }
         full_vars.update(self.vars[language])
