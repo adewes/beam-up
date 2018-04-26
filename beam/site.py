@@ -146,6 +146,7 @@ class Site(object):
         return parsed_objs
 
     def write(self, content, path):
+        logger.info("Writing content to {}".format(path))
         full_path = self.get_build_path(path)
         dirname = os.path.dirname(full_path)
         if not os.path.exists(dirname):
@@ -183,15 +184,23 @@ class Site(object):
         else:
             raise TypeError("No processor for file type: {}".format(filename))
         output = input
-        full_vars = {}
+        full_vars = {
+            'params' : params,
+        }
+        #first we include generic context
         full_vars.update(self.config.get('context', {}))
+        #then language-specific context
+        full_vars.update(self.config['languages'][language].get('context', {}))
+        #then common definitions
         full_vars.update({
             'language' : self.config['languages'][language],
             'languages' : self.config['languages'],
             'lang' : language,
             'site' : self,
         })
+        #then builder-specific variables
         full_vars.update(self.vars[language])
+        #and finally variables passed as parameters
         full_vars.update(vars)
         for processor_cls in processor_params['processors']:
             processor = processor_cls(self, params, language)
@@ -199,8 +208,6 @@ class Site(object):
         return output
 
     def get_filename(self, language, name):
-        if ':' in name:
-            language, name = name.split(':', 1)
         return self.links[language][name]
 
     def get_link(self, language, name):

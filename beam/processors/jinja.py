@@ -36,6 +36,7 @@ class JinjaProcessor(BaseProcessor):
         choice_loader = ChoiceLoader([dict_loader, FileSystemLoader('{}/templates'.format(theme_path)), FileSystemLoader(self.site.src_path)])
         env = Environment(loader=choice_loader)
         env.filters['href'] = self.href
+        env.filters['full_href'] = self.full_href
         env.filters['file'] = self.file
         if with_pygments:
             env.filters['highlight'] = self.highlight
