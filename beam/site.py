@@ -153,6 +153,11 @@ class Site(object):
         with open(full_path, 'w') as output_file:
             output_file.write(content)
 
+    def full_href(self, language, url):
+        href = self.href(language, url)
+        site_url = self.config['languages'][language].get('url', self.config.get('url', ''))
+        return '{}{}'.format(site_url, href)
+
     def href(self, language, url):
         link = self.get_link(language, url)
         return link

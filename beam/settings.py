@@ -1,5 +1,5 @@
 from .processors import JinjaProcessor, MarkdownProcessor, PlainProcessor
-from .builders import BlogBuilder, PagesBuilder, StaticFilesBuilder
+from .builders import BlogBuilder, PagesBuilder, StaticFilesBuilder, SitemapBuilder
 from .loaders import FileLoader
 
 SETTINGS = {
@@ -26,6 +26,10 @@ SETTINGS = {
             'builder' : StaticFilesBuilder,
             'providers' : ['static_file'], 
             'name' : 'static_files'
+        },
+        {
+            'builder' : SitemapBuilder,
+            'name' : 'sitemap'
         },
     ],
     'processors' : [
