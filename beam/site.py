@@ -183,12 +183,14 @@ class Site(object):
         else:
             raise TypeError("No processor for file type: {}".format(filename))
         output = input
-        full_vars = {
+        full_vars = {}
+        full_vars.update(self.config.get('context', {}))
+        full_vars.update({
             'language' : self.config['languages'][language],
             'languages' : self.config['languages'],
             'lang' : language,
             'site' : self,
-        }
+        })
         full_vars.update(self.vars[language])
         full_vars.update(vars)
         for processor_cls in processor_params['processors']:
