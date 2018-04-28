@@ -14,37 +14,46 @@ def update(d, ud, overwrite=True):
                 return
             d[key] = value
 
+def load_include(value, include_path):
+    path = os.path.abspath(os.path.join(os.path.dirname(include_path[-1]), value))
+    if path in include_path:
+        raise ValueError("Recursive import of {} (path: {})"\
+            .format(path, '->'\
+            .join(['"{}"'\
+            .format(s) for s in include_path])))
+    return load_config(path, include_path=include_path+[path])
+
 def load_includes(config, include_path):
     if isinstance(config, dict):
-        d = {}
 
-        def load_include(key='$include'):
-            value = config[key]
-            path = os.path.abspath(os.path.join(os.path.dirname(include_path[-1]), value))
-            if path in include_path:
-                raise ValueError("Recursive import of {} (path: {})"\
-                    .format(path, '->'\
-                    .join(['"{}"'\
-                    .format(s) for s in include_path])))
-            nd = load_config(path, include_path=include_path+[path])
-            if nd:
-                update(d, nd)
+        d = config.copy()
+
+        for key, value in d.items():
+            d[key] = load_includes(value, include_path=include_path)
 
         if '$include' in config:
-            load_include('$include')
-        for key, value in config.items():
-            if key == '$include':
-                continue
-            result = load_includes(value, include_path=include_path)
-            if key in d and isinstance(d[key], dict):
-                update(d[key], result)
+            del d['$include']
+            nd = load_include(config['$include'], include_path)
+            if config.get('$replace'):
+                d = nd
             else:
-                d[key] = result
-        if '$include-after' in config:
-            load_include('$include-after')
+                if isinstance(nd, dict):
+                    nd.update(d)
+                elif nd is None:
+                    nd = {}
+                d = nd
+
         return d
-    elif isinstance(config, list):
-        return [load_includes(i, include_path=include_path) for i in config]
+    elif isinstance(config, (list, tuple)):
+        l = []
+        for c in config:
+            result = load_includes(c, include_path=include_path)
+            #we extend the list with the result if "$as-list" is set to true
+            if isinstance(c, dict) and '$include' in c and isinstance(result, list):
+                l.extend(result)
+            else:
+                l.append(result)
+        return l
     return config
             
 

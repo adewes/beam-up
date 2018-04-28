@@ -16,10 +16,10 @@ url_str = """  <url>
 class SitemapBuilder(BaseBuilder):
 
     def build_sitemap(self, language, links):
-        urls = []
+        urls = set()
         for link in links:
-            urls.append(url_str.format(url=self.site.full_href(language, link)))
-        sitemap = sitemap_str.format(urls="\n".join(urls))
+            urls.add(url_str.format(url=self.site.full_href(language, link)))
+        sitemap = sitemap_str.format(urls="\n".join(list(urls)))
         dst = self.site.get_dst('sitemap', language, extension='xml')
         self.site.write(sitemap, dst)
 
