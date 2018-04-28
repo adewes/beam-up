@@ -38,7 +38,7 @@ def load_includes(config, include_path):
                 d = nd
             else:
                 if isinstance(nd, dict):
-                    update(nd, d)
+                    nd.update(d)
                 elif nd is None:
                     nd = {}
                 d = nd
