@@ -22,9 +22,9 @@ class PagesBuilder(BaseBuilder):
         for page in pages:
             if not 'src' in page:
                 continue
-            links[page['name']] = self.site.get_link_dst(page['slug'], language)
+            links[page['name']] = page['link']
             if page.get('index'):
-                links[''] = self.site.get_link_dst(page['slug'], language)
+                links[''] = page['link']
         return links
 
     def build(self):

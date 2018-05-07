@@ -30,7 +30,6 @@ class BlogBuilder(BaseBuilder):
 
     def create_links(self, blog_pages, articles, language):
         links = {}
-
         for i, blog_page in enumerate(blog_pages):
             slug = self.get_index_slug(language, i)
             link = self.site.get_link_dst(slug, language)
@@ -39,12 +38,12 @@ class BlogBuilder(BaseBuilder):
                 links['blog'] = link
 
             for article in articles:
-                links[article['name']] = article['link']
+                links['blog-{}'.format(article['name'])] = article['dst']
         return links
 
     def build(self):
         for language, blog_pages in self.blog_pages_by_language.items():
-            return self.build_blog(blog_pages, language)
+            self.build_blog(blog_pages, language)
 
     def sort_articles(self, articles):
         return sorted(articles, key=lambda x : x.get('date',x.get('title')))
@@ -88,8 +87,7 @@ class BlogBuilder(BaseBuilder):
         }
         input = self.site.load(article['src'])
         output = self.site.process(input, article, vars, language)
-        dst = self.site.get_dst(article['slug'], language)
-        self.site.write(output, dst)
+        self.site.write(output, article['dst'])
 
     def parse_articles(self, articles, language):
         parsed_articles = self.site.parse_objs(articles, language, prefix=self.get_blog_prefix(language))
