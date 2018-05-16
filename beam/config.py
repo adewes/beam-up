@@ -1,17 +1,25 @@
 import yaml
 import os
 
-def update(d, ud, overwrite=True):
+def update(d, ud):
     for key, value in ud.items():
+        overwrite = False
+        if key.endswith('!'):
+            key = key[:-1]
+            overwrite = True
         if key not in d:
             d[key] = value
         elif isinstance(value, dict):
-            update(d[key], value, overwrite=overwrite)
+            if overwrite:
+                d[key] = value
+            else:
+                update(d[key], value)
         elif isinstance(value, list) and isinstance(d[key], list):
-            d[key] += value
+            if overwrite:
+                d[key] = value
+            else:
+                d[key] += value
         else:
-            if key in d and not overwrite:
-                return
             d[key] = value
 
 def load_include(value, include_path):
@@ -38,7 +46,7 @@ def load_includes(config, include_path):
                 d = nd
             else:
                 if isinstance(nd, dict):
-                    nd.update(d)
+                    update(nd, d)
                 elif nd is None:
                     nd = {}
                 d = nd
