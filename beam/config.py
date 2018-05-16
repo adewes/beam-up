@@ -42,14 +42,11 @@ def load_includes(config, include_path):
         if '$include' in config:
             del d['$include']
             nd = load_include(config['$include'], include_path)
-            if config.get('$replace'):
-                d = nd
-            else:
-                if isinstance(nd, dict):
-                    update(nd, d)
-                elif nd is None:
-                    nd = {}
-                d = nd
+            if isinstance(nd, dict):
+                update(nd, d)
+            elif nd is None:
+                nd = {}
+            d = nd
 
         return d
     elif isinstance(config, (list, tuple)):
