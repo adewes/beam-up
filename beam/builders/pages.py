@@ -1,4 +1,7 @@
 from .base import BaseBuilder
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PagesBuilder(BaseBuilder):
 
@@ -41,7 +44,11 @@ class PagesBuilder(BaseBuilder):
         if 'title' in page:
             vars['title'] = page['title']
         input = self.site.load(page['src'])
-        output = self.site.process(input, page, vars, language)
+        try:
+            output = self.site.process(input, page, vars, language)
+        except:
+            logger.error("An error occured when processing page '{}' in language '{}'".format(page['name'], language))
+            raise
         self.site.write(output, page['dst'])
 
     def flatten_pages(self, pages):

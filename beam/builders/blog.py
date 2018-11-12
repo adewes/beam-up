@@ -25,7 +25,7 @@ class BlogBuilder(BaseBuilder):
     def get_index_slug(self, language, i):
         return os.path.join(
             self.get_blog_prefix(language),
-            'index{}'.format('{}'.format(i+1) if i != 0 else '')
+            'index{}'.format('-{}'.format(i) if i != 0 else '')
         )
 
     def create_links(self, blog_pages, articles, language):
@@ -33,7 +33,7 @@ class BlogBuilder(BaseBuilder):
         for i, blog_page in enumerate(blog_pages):
             slug = self.get_index_slug(language, i)
             link = self.site.get_link_dst(slug, language)
-            links['blog-{}'.format(i+1)] = link
+            links['blog-{}'.format(i)] = link
             if i == 0:
                 links['blog'] = link
 
@@ -46,7 +46,8 @@ class BlogBuilder(BaseBuilder):
             self.build_blog(blog_pages, language)
 
     def sort_articles(self, articles):
-        return sorted(articles, key=lambda x : x.get('date',x.get('title')))
+        sorted_articles = list(reversed(sorted(articles, key=lambda x : x.get('date',x.get('title')))))
+        return sorted_articles
 
     def paginate_articles(self, articles):
         app = self.site.config.get('articles-per-page', 10)
@@ -83,7 +84,7 @@ class BlogBuilder(BaseBuilder):
         vars = {
             'article' : article,
             'blog_page' : page,
-            'index_link' : self.site.get_link(language, 'blog-{}'.format(page+1)),
+            'index_link' : self.site.get_link(language, 'blog-{}'.format(page)),
         }
         input = self.site.load(article['src'])
         output = self.site.process(input, article, vars, language)
