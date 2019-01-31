@@ -39,14 +39,21 @@ def load_includes(config, include_path):
         for key, value in d.items():
             d[key] = load_includes(value, include_path=include_path)
 
-        if '$include' in config:
-            del d['$include']
-            nd = load_include(config['$include'], include_path)
-            if isinstance(nd, dict):
-                update(nd, d)
-            elif nd is None:
-                nd = {}
-            d = nd
+        if '$include' in d:
+
+            nds = d.copy()
+
+            includes = d['$include']
+
+            del nds['$include']
+
+            if not isinstance(includes, list):
+                includes = [includes]
+            for include in includes:
+                nd = load_include(include, include_path)
+                if isinstance(nd, dict):
+                    update(nds, nd)
+            return nds
 
         return d
     elif isinstance(config, (list, tuple)):
