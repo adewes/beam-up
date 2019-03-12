@@ -19,7 +19,7 @@ def update(d, ud):
                 d[key] = value
             else:
                 d[key] += value
-        else:
+        elif overwrite:
             d[key] = value
 
 def load_include(value, include_path):
