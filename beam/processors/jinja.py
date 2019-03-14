@@ -1,5 +1,7 @@
 from .base import BaseProcessor
 
+import markdown2
+
 from jinja2 import Environment, FileSystemLoader, ChoiceLoader, DictLoader
 
 try:
@@ -30,14 +32,22 @@ class JinjaProcessor(BaseProcessor):
             code = code.strip()
         return highlight(code, lexer, HtmlFormatter(style=style, cssclass='{}'.format(style_name)))
 
+    def markdown(self, text):
+        result = markdown2.markdown(text, extras=['footnotes', 'fenced-code-blocks'])
+        return result
+
     def get_jinja_env(self, input):
         dict_loader = DictLoader({'input' : input})
         theme_path = self.site.theme_path
         choice_loader = ChoiceLoader([dict_loader, FileSystemLoader('{}/templates'.format(theme_path)), FileSystemLoader(self.site.src_path)])
         env = Environment(loader=choice_loader)
+
+        # we add some useful filters
         env.filters['href'] = self.href
         env.filters['full_href'] = self.full_href
         env.filters['file'] = self.file
+        env.filters['markdown'] = self.markdown
+
         if with_pygments:
             env.filters['highlight'] = self.highlight
             env.filters['highlight_styles'] = self.highlight_styles
