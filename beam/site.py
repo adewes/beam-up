@@ -164,7 +164,7 @@ class Site(object):
     def href(self, language, url):
         link = self.get_link(language, url)
         if link:
-            hide_extensions = set(self.config.get('hide-href-extensions', []))
+            hide_extensions = self.config.get('hide-href-extensions', [])
             for extension in hide_extensions:
                 if link.endswith(extension):
                     link = link[:-len(extension)]
