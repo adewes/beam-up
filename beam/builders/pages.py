@@ -12,9 +12,10 @@ class PagesBuilder(BaseBuilder):
     def index(self, params, language):
         pages = self.parse_pages(params.get('pages', []), language)
         self.pages_by_language[language] = pages
-        links = self.create_links(pages, language)
+        links, link_attrs = self.create_links(pages, language)
         return {
             'links' : links,
+            'link_attrs' : link_attrs,
             'vars' : {
                 'pages' : pages
             }
@@ -22,6 +23,7 @@ class PagesBuilder(BaseBuilder):
 
     def create_links(self, pages, language):
         links = {}
+        link_attrs = {}
         for page in pages:
             if not 'src' in page:
                 continue
@@ -30,9 +32,9 @@ class PagesBuilder(BaseBuilder):
                 if '' in links:
                     logger.warning("Multiple index pages defined.")
                 links[''] = page['link']
-            else:
-                links[page['name']] = page['link']
-        return links
+            links[page['name']] = page['link']
+            link_attrs[page['name']] = page.get('attrs', {})
+        return links, link_attrs
 
     def build(self):
         for language, pages in self.pages_by_language.items():

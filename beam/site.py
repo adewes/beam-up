@@ -110,8 +110,7 @@ class Site(object):
 
     def get_link_dst(self, slug, language, prefix='', extension='html'):
         suffix = ''
-        hide_extensions = set(self.config.get('hide-extensions', []))
-        if extension and extension not in hide_extensions:
+        if extension:
             suffix = '.{}'.format(extension)
         return os.path.join(self.get_language_link_prefix(language), prefix, slug)+suffix
 
@@ -155,13 +154,22 @@ class Site(object):
         with open(full_path, 'w') as output_file:
             output_file.write(content)
 
+    def url(self, language):
+        return self.config['languages'][language].get('url', self.config.get('url', ''))
+
     def full_href(self, language, url):
         href = self.href(language, url)
-        site_url = self.config['languages'][language].get('url', self.config.get('url', ''))
-        return '{}{}'.format(site_url, href)
+        return '{}{}'.format(self.url(language), href)
 
     def href(self, language, url):
         link = self.get_link(language, url)
+        if link:
+            hide_extensions = set(self.config.get('hide-href-extensions', []))
+            for extension in hide_extensions:
+                if link.endswith(extension):
+                    link = link[:-len(extension)]
+        else:
+            logger.warning("No link for name {} and language {} found".format(url, language))
         return link
 
     def scss(self, filename):
@@ -224,6 +232,7 @@ class Site(object):
 
     def init_builders(self):
         self.links = {}
+        self.link_attrs = {}
         self.vars = {}
         self.providers = {}
         self.addons = defaultdict(list)
@@ -255,12 +264,14 @@ class Site(object):
 
         for language, params in self.config.get('languages', {}).items():
             self.links[language] = {}
+            self.link_attrs[language] = {}
             self.vars[language] = {}
             for builder in self.builders:
                 params['name'] = language
                 #here the builders create links and other structures
                 result = builder.index(params, language)
                 self.links[language].update(result.get('links', {}))
+                self.link_attrs[language].update(result.get('link_attrs', {}))
                 self.vars[language].update(result.get('vars', {}))
 
         for builder in self.builders:
