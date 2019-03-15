@@ -1,7 +1,10 @@
 from .base import BaseBuilder
 
+import logging
 import shutil
 import os
+
+logger = logging.getLogger(__name__)
 
 class StaticFilesBuilder(BaseBuilder):
 
@@ -42,7 +45,8 @@ class StaticFilesBuilder(BaseBuilder):
             full_path = os.path.join(dir, path)
             if os.path.exists(full_path):
                 return full_path
-        raise IOError("Path {} not found!".format(path))
+        logger.error("Path '{}' not found!".format(path))
+        return ''
 
     def get_path(self, path):
         full_path = self.resolve_path(path)

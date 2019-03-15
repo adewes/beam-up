@@ -27,13 +27,14 @@ class PagesBuilder(BaseBuilder):
         for page in pages:
             if not 'src' in page:
                 continue
+            name = page['name']
             if page.get('index'):
+                name = ''
                 # this is the index page
                 if '' in links:
                     logger.warning("Multiple index pages defined.")
-                links[''] = page['link']
-            links[page['name']] = page['link']
-            link_attrs[page['name']] = page.get('attrs', {})
+            links[name] = page['link']
+            link_attrs[name] = page.get('attrs', {})
         return links, link_attrs
 
     def build(self):
@@ -53,8 +54,9 @@ class PagesBuilder(BaseBuilder):
         try:
             output = self.site.process(input, page, vars, language)
         except:
-            logger.error("An error occured when processing page '{}' in language '{}'".format(page['name'], language))
-            raise
+            logger.error("An error occured when processing page '{}' in language '{}'"\
+                .format(page['name'], language))
+            return
         self.site.write(output, page['dst'])
 
     def flatten_pages(self, pages):
