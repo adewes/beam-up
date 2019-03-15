@@ -25,9 +25,13 @@ class PagesBuilder(BaseBuilder):
         for page in pages:
             if not 'src' in page:
                 continue
-            links[page['name']] = page['link']
             if page.get('index'):
+                # this is the index page
+                if '' in links:
+                    logger.warning("Multiple index pages defined.")
                 links[''] = page['link']
+            else:
+                links[page['name']] = page['link']
         return links
 
     def build(self):

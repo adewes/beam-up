@@ -110,7 +110,8 @@ class Site(object):
 
     def get_link_dst(self, slug, language, prefix='', extension='html'):
         suffix = ''
-        if extension:
+        hide_extensions = set(self.config.get('hide-extensions', []))
+        if extension and extension not in hide_extensions:
             suffix = '.{}'.format(extension)
         return os.path.join(self.get_language_link_prefix(language), prefix, slug)+suffix
 
