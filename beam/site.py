@@ -166,7 +166,8 @@ class Site(object):
         if link:
             hide_extensions = self.config.get('hide-href-extensions', [])
             for extension in hide_extensions:
-                if link.endswith(extension):
+                # we do not remove the entire link as that breaks it
+                if link.endswith(extension) and extension != link:
                     link = link[:-len(extension)]
         else:
             logger.warning("No link for name {} and language {} found".format(url, language))
