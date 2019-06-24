@@ -41,26 +41,36 @@ def load_includes(config, include_path):
 
         if '$include' in d:
 
-            nds = d.copy()
+            if d.get('$as-list'):
+                nds = []
+                is_list = True
+            else:
+                is_list = False
+                nds = d.copy()
+                del nds['$include']
 
             includes = d['$include']
-
-            del nds['$include']
 
             if not isinstance(includes, list):
                 includes = [includes]
             for include in includes:
                 nd = load_include(include, include_path)
-                if isinstance(nd, dict):
+                if nd is None:
+                    continue
+                if is_list:
+                    if not isinstance(nd, (list, tuple)):
+                        raise ValueError("expected a list or tuple")
+                    nds.extend(nd)
+                else:
+                    if not isinstance(nd, dict):
+                        raise ValueError("expected a dictionary")
                     update(nds, nd)
             return nds
-
         return d
     elif isinstance(config, (list, tuple)):
         l = []
         for c in config:
             result = load_includes(c, include_path=include_path)
-            #we extend the list with the result if "$as-list" is set to true
             if isinstance(c, dict) and '$include' in c and isinstance(result, list):
                 l.extend(result)
             else:

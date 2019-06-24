@@ -90,11 +90,18 @@ class Site(object):
 
     def translate(self, language, key, *args, **kwargs):
         translations = self.translations
-        if not key in translations or not translations[key]:
-            return "[no translation for key {}]".format(key)
-        if not language in translations[key] or not translations[key][language]:
+        if not isinstance(key, (list, tuple)):
+            kc = key.split('.')
+        else:
+            kc = key
+        cv = translations
+        for elem in kc:
+            if not elem in cv:
+                return "[no translation for key {}]".format(key)
+            cv = cv[elem]
+        if not language in cv or not cv[language]:
             return "[no translation for language {} and key {}]".format(language, key)
-        return translations[key][language].format(*args, **kwargs)
+        return cv[language].format(*args, **kwargs)
 
     def get_language_prefix(self, language):
         return self.config['languages'][language].get('prefix', language)

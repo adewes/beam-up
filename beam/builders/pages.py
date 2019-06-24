@@ -1,5 +1,6 @@
 from .base import BaseBuilder
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class PagesBuilder(BaseBuilder):
         except:
             logger.error("An error occured when processing page '{}' in language '{}'"\
                 .format(page['name'], language))
+            logger.error(traceback.format_exc())
             return
         self.site.write(output, page['dst'])
 

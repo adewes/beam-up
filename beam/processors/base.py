@@ -21,5 +21,4 @@ class BaseProcessor(object):
         self.site = site
         self.params = params
         self.language = language
-
     
