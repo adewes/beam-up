@@ -83,5 +83,5 @@ def load_config(filename, include_path=None):
     if include_path is None:
         include_path = [os.path.abspath(filename)]
     with open(filename) as input_file:
-        config = yaml.load(input_file.read())
+        config = yaml.load(input_file.read(),Loader=yaml.FullLoader)
     return load_includes(config, include_path=include_path)

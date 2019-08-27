@@ -1,6 +1,7 @@
 from .base import BaseProcessor
 
 import markdown2
+import textwrap
 
 from jinja2 import Environment, FileSystemLoader, ChoiceLoader, DictLoader
 
@@ -25,11 +26,13 @@ class JinjaProcessor(BaseProcessor):
         style = get_style_by_name(style_name)
         return '<style type="text/css">{}</style>'.format(HtmlFormatter(style=style).get_style_defs('.highlight .{}'.format(style_name)))
 
-    def highlight(self, code, language='python', style_name='monokai', strip=True):
+    def highlight(self, code, language='python', style_name='monokai', strip=True, deindent=True):
         lexer = get_lexer_by_name(language)
         style = get_style_by_name(style_name)
         if strip:
             code = code.strip()
+        if deindent:
+            code = textwrap.dedent(code)
         return highlight(code, lexer, HtmlFormatter(style=style, cssclass='{}'.format(style_name)))
 
     def markdown(self, text):
