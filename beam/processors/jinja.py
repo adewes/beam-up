@@ -29,10 +29,12 @@ class JinjaProcessor(BaseProcessor):
     def highlight(self, code, language='python', style_name='monokai', strip=True, deindent=True):
         lexer = get_lexer_by_name(language)
         style = get_style_by_name(style_name)
+        if deindent:
+            print("De-indenting code...")
+            code = textwrap.dedent(code)
+            print(code)
         if strip:
             code = code.strip()
-        if deindent:
-            code = textwrap.dedent(code)
         return highlight(code, lexer, HtmlFormatter(style=style, cssclass='{}'.format(style_name)))
 
     def markdown(self, text):
