@@ -88,7 +88,7 @@ class Site(object):
         if 'builders' in self.config:
             self.settings['builders'].extend(self.config['builders'])
 
-    def translate(self, language, key, *args, **kwargs):
+    def translate(self, language, key, fallback=None, *args, **kwargs):
         translations = self.translations
         if not isinstance(key, (list, tuple)):
             kc = key.split('.')
@@ -97,9 +97,13 @@ class Site(object):
         cv = translations
         for elem in kc:
             if not elem in cv:
+                if fallback:
+                    return self.translate(language, fallback, *args, **kwargs)
                 return "[no translation for key {}]".format(key)
             cv = cv[elem]
         if not language in cv or not cv[language]:
+            if fallback:
+                return self.translate(language, fallback, *args, **kwargs)
             return "[no translation for language {} and key {}]".format(language, key)
         return cv[language].format(*args, **kwargs)
 
