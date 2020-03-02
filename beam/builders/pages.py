@@ -93,7 +93,11 @@ class PagesBuilder(BaseBuilder):
                 for i in range(1, len(components)+1):
                     name = '.'.join(components[:i])
                     if name in page_index:
-                        full_slug.append(page_index[name]['slug'])
+                        page_slug = page_index[name]['slug']
+                        if page_slug.startswith('/'):
+                            full_slug = [page_slug[1:]]
+                        else:
+                            full_slug.append(page_slug)
                 new_slugs[page['name']] = '/'.join(full_slug)
                 page['level'] = len(components)-1
                 parent = '.'.join(components[:-1])
