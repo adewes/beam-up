@@ -24,7 +24,7 @@ class StaticFilesBuilder(BaseBuilder):
             for path, dirs, files in os.walk(dir):
                 relpath = os.path.relpath(path, dir)
                 for dirname in dirs:
-                    dest_path = os.path.join(self.site.build_path, 'static', relpath, dirname)
+                    dest_path = os.path.join(self.site.build_path, self.site.static_path, relpath, dirname)
                     if os.path.exists(dest_path) and not os.path.isdir(dest_path):
                         shutil.rmtree(dest_path)
                     elif not os.path.exists(dest_path):
@@ -32,7 +32,7 @@ class StaticFilesBuilder(BaseBuilder):
                 for filename in files:
                     src_path = os.path.join(path, filename)
                     dest_path = os.path.join(self.site.build_path, 
-                                             'static',
+                                             self.site.static_path,
                                              relpath,
                                              filename)
                     if not os.path.exists(dest_path) or \
@@ -50,7 +50,7 @@ class StaticFilesBuilder(BaseBuilder):
 
     def get_path(self, path):
         full_path = self.resolve_path(path)
-        return os.path.join(self.site.path, 'static', path)
+        return os.path.join(self.site.path, self.site.static_path, path)
 
     def get_static_paths(self):
         if self._static_paths is not None:

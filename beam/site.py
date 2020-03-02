@@ -43,6 +43,10 @@ class Site(object):
         return self.config.get('src-path', 'src')
 
     @property
+    def static_path(self):
+        return self.config.get('static-path', 'static')
+
+    @property
     def build_path(self):
         return self.config.get('build-path', 'build')
 
