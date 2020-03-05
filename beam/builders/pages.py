@@ -50,8 +50,14 @@ class PagesBuilder(BaseBuilder):
         vars = {
             'page' : page,
         }
-        if 'title' in page:
-            vars['title'] = page['title']
+        cp = page
+        titles = []
+        while cp is not None:
+            if 'title' in cp:
+                titles += [str(cp['title'])]
+            cp = cp.get('parent')
+        if titles:
+            vars['title'] = ' - '.join(titles[::-1])
         input = self.site.load(page['src'])
         try:
             output = self.site.process(input, page, vars, language)
