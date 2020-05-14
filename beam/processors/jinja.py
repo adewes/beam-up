@@ -41,8 +41,7 @@ class JinjaProcessor(BaseProcessor):
 
     def get_jinja_env(self, input):
         dict_loader = DictLoader({'input' : input})
-        theme_path = self.site.theme_path
-        choice_loader = ChoiceLoader([dict_loader, FileSystemLoader('{}/templates'.format(theme_path)), FileSystemLoader(self.site.src_path)])
+        choice_loader = ChoiceLoader([dict_loader, FileSystemLoader('{}/templates'.format(self.site.src_path)), FileSystemLoader(self.site.src_path)])
         env = Environment(loader=choice_loader)
 
         # we add some useful filters

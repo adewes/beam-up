@@ -55,8 +55,7 @@ class StaticFilesBuilder(BaseBuilder):
     def get_static_paths(self):
         if self._static_paths is not None:
             return self._static_paths
-        paths = [os.path.join(self.site.src_path, 'static'),
-                os.path.join(self.site.theme_path, 'static')]
+        paths = [os.path.join(self.site.src_path, 'static')]
         for language in self.site.config.get('languages', {}):
             static_path = os.path.join(self.site.src_path, '{}/static'.format(language))
             if os.path.exists(static_path):

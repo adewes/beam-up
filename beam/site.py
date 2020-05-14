@@ -26,7 +26,6 @@ class Site(object):
             'loaders' : SETTINGS['loaders'].copy(),
             'builders' : SETTINGS['builders'].copy(),
         }
-        self._theme_config = None
         self._translations = None
         self.process_config()
 
@@ -56,32 +55,29 @@ class Site(object):
 
     @property
     def translations(self):
+
+        def convert_keys(d):
+            """
+            We convert all keys to strings, which makes it easier to e.g. use
+            numbers without explicitly wrapping them in quotes in the YAML files.
+            """
+            return {
+                str(key) : convert_keys(value) if isinstance(value, dict) else value
+                for key, value in d.items()
+            }
+
         if self._translations is not None:
             return self._translations
+
         translations = {}
-        for d in (self.theme_config, self.config):
-            if 'translations' in d:
-                for key, trs in d['translations'].items():
-                    if not key in translations:
-                        translations[key] = {}
-                    translations[key].update(trs)
-        self._translations = translations
+
+        if 'translations' in self.config:
+            for key, trs in self.config['translations'].items():
+                if not key in translations:
+                    translations[key] = {}
+                translations[key].update(trs)
+        self._translations = convert_keys(translations)
         return translations
-
-    @property
-    def theme_config(self):
-        if self._theme_config is not None:
-            return self._theme_config
-        config_path = os.path.join(self.theme_path, 'theme.yml')
-        if os.path.exists(config_path):
-            self._theme_config = load_config(config_path)
-        else:
-            self._theme_config = {}
-        return self._theme_config
-
-    @property
-    def theme_path(self):
-        return self.config.get('theme-path', 'theme')
 
     def process_config(self):
         if '$all' in self.config.get('languages', {}):
