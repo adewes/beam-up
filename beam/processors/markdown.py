@@ -24,6 +24,6 @@ class MarkdownProcessor(BaseProcessor):
         result = markdown2.markdown(input, extras=['footnotes','fenced-code-blocks'])
         if self.params.get('bare'):
             return result
-        template_filename = self.params.get('template', 'article.html')
+        template_filename = self.params.get('template', self.site.config.get('markdown', {}).get('template', 'markdown.html'))
         template_result = template.format(template=template_filename, content=result)
         return template_result
