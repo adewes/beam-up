@@ -22,11 +22,15 @@ except ImportError:
 
 class JinjaProcessor(BaseProcessor):
 
-    def highlight_styles(self, code, style_name='monokai'):
+    def highlight_styles(self, code, style_name=None):
+        if style_name is None:
+            style_name = self.site.config.get('pygments', {}).get('style', 'monokai')
         style = get_style_by_name(style_name)
         return '<style type="text/css">{}</style>'.format(HtmlFormatter(style=style).get_style_defs('.highlight .{}'.format(style_name)))
 
-    def highlight(self, code, language='python', style_name='monokai', strip=True, deindent=True):
+    def highlight(self, code, language='python', style_name=None, strip=True, deindent=True):
+        if style_name is None:
+            style_name = self.site.config.get('pygments', {}).get('style', 'monokai')
         lexer = get_lexer_by_name(language)
         style = get_style_by_name(style_name)
         if deindent:
@@ -37,6 +41,13 @@ class JinjaProcessor(BaseProcessor):
 
     def markdown(self, text):
         result = markdown2.markdown(text, extras=['footnotes', 'fenced-code-blocks'])
+        return result
+
+    def translate(self, key, *args, **kwargs):
+        result = super().translate(key, *args, **kwargs)
+        translate_hint = self.site.config.get('translate-hint')
+        if translate_hint:
+            return translate_hint.format(value=result, key=key, args=args, kwargs=kwargs)
         return result
 
     def get_jinja_env(self, input):
