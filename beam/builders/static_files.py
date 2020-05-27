@@ -12,7 +12,8 @@ class StaticFilesBuilder(BaseBuilder):
         super().__init__(site)
         self._static_paths = None
         self.providers = {
-            'static_file' : self.get_path
+            'static_file' : self.get_path,
+            'source_path': self.get_source_path
         }
 
     def postprocess(self):
@@ -46,10 +47,19 @@ class StaticFilesBuilder(BaseBuilder):
             if os.path.exists(full_path):
                 return full_path
         logger.error("Path '{}' not found!".format(path))
-        return ''
+
+    def get_source_path(self, path):
+        dirs = self.get_static_paths()
+        for dir in dirs:
+            full_path = os.path.join(dir, path)
+            if os.path.exists(full_path):
+                return full_path
+
 
     def get_path(self, path):
         full_path = self.resolve_path(path)
+        if not full_path:
+            return
         return os.path.join(self.site.path, self.site.static_path, path)
 
     def get_static_paths(self):

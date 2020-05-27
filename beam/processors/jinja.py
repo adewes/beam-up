@@ -1,7 +1,12 @@
 from .base import BaseProcessor
 
+from collections import defaultdict
+from urllib.parse import quote
+
 import markdown2
 import textwrap
+import os
+import re
 
 from jinja2 import Environment, FileSystemLoader, ChoiceLoader, DictLoader
 
@@ -39,6 +44,56 @@ class JinjaProcessor(BaseProcessor):
             code = code.strip()
         return highlight(code, lexer, HtmlFormatter(style=style, cssclass='{}'.format(style_name)))
 
+    def picture(self, filename, prefs=['webp', 'png', 'jpeg'], **kwargs):
+        file_path = self.file(filename)
+        file_dir = os.path.dirname(file_path)
+        if not file_path:
+            return ""
+        source_path = self.source_path(filename)
+        filename = os.path.basename(source_path)
+        source_dir = os.path.dirname(source_path)
+        basename, zoom, ext = re.match(r"^(.*?)(?:@(\d+x))?\.(.*)$", filename).groups()
+        extra_args = []
+        for k, v in kwargs.items():
+            extra_args.append(f'{k}="{v}"')
+        extra_args = " ".join(extra_args)
+        files = os.listdir(source_dir)
+        alternatives = defaultdict(list)
+        for fname in files:
+            if fname.startswith(basename):
+                _, zoom, ext = re.match(r"^(.*?)(?:@(\d+x))?\.(.*)$", fname).groups()
+                if zoom is None:
+                    zoom = '1x'
+                alternatives[ext].append((fname, zoom))
+
+        html_alternatives = ""
+
+        def generate_alternative(ext, ext_alternatives):
+
+            alts = []
+            for f, z in ext_alternatives:
+                fp = quote(f"{file_dir}/{f}")
+                alts.append(f"{fp} {z}")
+            joined_alternatives = ", ".join(alts)
+            return f"""
+    <source type="image/{ext}" srcset="{joined_alternatives}">
+"""
+
+        # we add the preferred formats first
+        for pref in prefs:
+            if pref in alternatives:
+                html_alternatives += generate_alternative(pref, alternatives[pref])
+        # then we add the rest
+        for ext, ext_alternatives in alternatives.items():
+            if not ext in prefs:
+                html_alternatives += generate_alternative(ext, ext_alternatives)
+        return f"""
+<picture>
+    {html_alternatives}
+    <img src="{file_path}" {extra_args}>
+</picture>
+"""
+
     def markdown(self, text):
         result = markdown2.markdown(text, extras=['footnotes', 'fenced-code-blocks'])
         return result
@@ -60,7 +115,7 @@ class JinjaProcessor(BaseProcessor):
         env.filters['full_href'] = self.full_href
         env.filters['file'] = self.file
         env.filters['markdown'] = self.markdown
-
+        env.filters['picture'] = self.picture
         if with_pygments:
             env.filters['highlight'] = self.highlight
             env.filters['highlight_styles'] = self.highlight_styles

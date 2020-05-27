@@ -7,6 +7,9 @@ class BaseProcessor(object):
     def file(self, filename):
         return self.site.request('static_file', filename)
 
+    def source_path(self, filename):
+        return self.site.request('source_path', filename)
+
     def href(self, href, language=None):
         if language is None:
             language = self.language
