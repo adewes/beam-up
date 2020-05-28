@@ -60,7 +60,7 @@ class JinjaProcessor(BaseProcessor):
         files = os.listdir(source_dir)
         alternatives = defaultdict(list)
         for fname in files:
-            if fname.startswith(basename):
+            if re.match("{}(?:@\d+x)?\.\w+$".format(re.escape(basename)), fname):
                 _, zoom, ext = re.match(r"^(.*?)(?:@(\d+x))?\.(.*)$", fname).groups()
                 if zoom is None:
                     zoom = '1x'
