@@ -3,10 +3,21 @@ from .base import BaseProcessor
 from collections import defaultdict
 from urllib.parse import quote
 
+import logging
 import markdown2
 import textwrap
 import os
 import re
+
+logger = logging.getLogger(__name__)
+
+with_pil = False
+
+try:
+    from PIL import Image, UnidentifiedImageError
+    with_pil = True
+except ImportError:
+    pass
 
 from jinja2 import Environment, FileSystemLoader, ChoiceLoader, DictLoader
 
@@ -44,7 +55,7 @@ class JinjaProcessor(BaseProcessor):
             code = code.strip()
         return highlight(code, lexer, HtmlFormatter(style=style, cssclass='{}'.format(style_name)))
 
-    def picture(self, filename, prefs=['webp', 'png', 'jpeg'], **kwargs):
+    def picture(self, filename, prefs=['webp', 'png', 'jpeg'], sizes='50vw', **kwargs):
         file_path = self.file(filename)
         file_dir = os.path.dirname(file_path)
         if not file_path:
@@ -64,9 +75,22 @@ class JinjaProcessor(BaseProcessor):
                 _, zoom, ext = re.match(r"^(.*?)(?:@(\d+x))?\.(.*)$", fname).groups()
                 if zoom is None:
                     zoom = '1x'
+                if with_pil:
+                    try:
+                        # we determine the exact image width to include
+                        image = Image.open(os.path.join(source_dir, fname))
+                        zoom = '{}w'.format(image.size[0])
+                    except UnidentifiedImageError:
+                        # we cannot properly read this image, ignore it
+                        logger.warning(f"Cannot read image {source_dir}/{fname}, ignoring its size...")
+                        pass
                 alternatives[ext].append((fname, zoom))
 
         html_alternatives = ""
+
+        sizestr = ""
+        if sizes:
+            sizestr = f'sizes="{sizes}"'
 
         def generate_alternative(ext, ext_alternatives):
 
@@ -76,7 +100,7 @@ class JinjaProcessor(BaseProcessor):
                 alts.append(f"{fp} {z}")
             joined_alternatives = ", ".join(alts)
             return f"""
-    <source type="image/{ext}" srcset="{joined_alternatives}">
+    <source type="image/{ext}" srcset="{joined_alternatives}" {sizestr}>
 """
 
         # we add the preferred formats first

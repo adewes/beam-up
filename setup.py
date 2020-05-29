@@ -12,7 +12,7 @@ setup(
     packages=find_packages(),
     package_data={'': ['*.ini']},
     include_package_data=True,
-    install_requires=['click', 'pyyaml', 'markdown2', 'jinja2', 'pygments'],
+    install_requires=['click', 'pyyaml', 'markdown2', 'jinja2', 'pygments', 'Pillow'],
     zip_safe=False,
     entry_points={
         'console_scripts': [
