@@ -129,7 +129,12 @@ class JinjaProcessor(BaseProcessor):
             return translate_hint.format(value=result, key=key, args=args, kwargs=kwargs)
         return result
 
-    def get_jinja_env(self, input):
+    def jinja(self, vars, input, **kwargs):
+        context = vars.copy()
+        context.update(kwargs)
+        return self.process(input, context)
+
+    def get_jinja_env(self, input, vars):
         dict_loader = DictLoader({'input' : input})
         choice_loader = ChoiceLoader([dict_loader, FileSystemLoader('{}/templates'.format(self.site.src_path)), FileSystemLoader(self.site.src_path)])
         env = Environment(loader=choice_loader)
@@ -140,6 +145,7 @@ class JinjaProcessor(BaseProcessor):
         env.filters['file'] = self.file
         env.filters['markdown'] = self.markdown
         env.filters['picture'] = self.picture
+        env.filters['jinja'] = lambda input, **kwargs: self.jinja(vars, input, **kwargs)
         if with_pygments:
             env.filters['highlight'] = self.highlight
             env.filters['highlight_styles'] = self.highlight_styles
@@ -150,7 +156,7 @@ class JinjaProcessor(BaseProcessor):
         return env
 
     def process(self, input, vars):
-        env = self.get_jinja_env(input)
+        env = self.get_jinja_env(input, vars)
         template = env.get_template('input')
         result = template.render(**vars)
         if with_bs and False:
