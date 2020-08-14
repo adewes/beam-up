@@ -1,4 +1,5 @@
 import yaml
+import json
 import os
 
 def update(d, ud):
@@ -40,7 +41,6 @@ def load_includes(config, include_path):
             d[key] = load_includes(value, include_path=include_path)
 
         if '$include' in d:
-
             if d.get('$as-list'):
                 nds = []
                 is_list = True
@@ -83,5 +83,9 @@ def load_config(filename, include_path=None):
     if include_path is None:
         include_path = [os.path.abspath(filename)]
     with open(filename) as input_file:
-        config = yaml.load(input_file.read(),Loader=yaml.FullLoader)
+        if filename.endswith(".json"):
+            # this is a JSON file
+            config = json.load(input_file)
+        else:
+            config = yaml.load(input_file.read(),Loader=yaml.FullLoader)
     return load_includes(config, include_path=include_path)
