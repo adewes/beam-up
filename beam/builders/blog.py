@@ -63,11 +63,13 @@ class BlogBuilder(BaseBuilder):
                 self.build_article(article, i, language)
 
     def get_blog_prefix(self, language):
-        return self.site.config['languages'][language].get('blog-path', 'blog')
+        return self.site.config['languages'][language].get('blog-path',
+            self.site.config.get('blog-path', 'blog'))
 
     def build_index_site(self, i, n, blog_page, language):
         input = "{% extends('index.html') %}"
         vars = {
+            'name' : 'blog-{}'.format(i),
             'blog_page' : blog_page,
             'i' : i,
             'n' : n,
@@ -83,6 +85,7 @@ class BlogBuilder(BaseBuilder):
         """
         vars = {
             'article' : article,
+            'name' : 'blog-{}'.format(article['name']),
             'blog_page' : page,
             'index_link' : self.site.get_link(language, 'blog-{}'.format(page)),
         }
