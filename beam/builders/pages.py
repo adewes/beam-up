@@ -49,6 +49,7 @@ class PagesBuilder(BaseBuilder):
     def build_page(self, page, language):
         vars = {
             'page' : page,
+            'name' : page['name'],
         }
         cp = page
         titles = []
