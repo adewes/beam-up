@@ -86,6 +86,7 @@ class BlogBuilder(BaseBuilder):
         vars = {
             'article' : article,
             'name' : 'blog-{}'.format(article['name']),
+            'slug' : article.get('slug', article['name']),
             'blog_page' : page,
             'index_link' : self.site.get_link(language, 'blog-{}'.format(page)),
         }
