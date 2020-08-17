@@ -6,7 +6,7 @@ def serialize_code(match):
     We retain the original value inside because it can provide meaningful context
     to the translation API. However, we ignore the translated value.
     """
-    return f"<code>{match.group(1)}</code>"
+    return f"<md-code>{match.group(1)}</md-code>"
 
 def serialize_ignore(match):
     # brackets don't match, we ignore this
@@ -37,6 +37,13 @@ def deserialize_md_link(match):
         return f"[{match.group(1)}]"
     return bs
 
+def serialize_tr_hint(match):
+    bi = base64.urlsafe_b64encode(match.group(2).encode("utf-8")).decode("ascii")
+    return f"<tr-hint v=\"{bi}\">{match.group(1)}</tr-hint>"
+
+def deserialize_tr_hint(match):
+    bs = base64.urlsafe_b64decode(match.group(1)).decode("utf-8")
+    return bs
 
 def deserialize_text(text):
     """
@@ -44,13 +51,17 @@ def deserialize_text(text):
     """
 
     # sometimes space after/before XML tags gets removed, we fix that here
-    text = re.sub(r"</([a-zA-Z\-]+)>([^$\.\;\<\n\s\(\)\]\[])", "</\\1> \\2", text)
-    text = re.sub(r"([\.\;\)a-zA-Z0-9])<([a-zA-Z])", "\\1 <\\2", text)
+    # after
+    text = re.sub(r"</([a-zA-Z\-]+)>([^$\,\.\;\<\n\s\(\)\]\[])", "</\\1> \\2", text)
+    # before
+    text = re.sub(r"([\,\.\;\)a-zA-Z0-9])<([a-zA-Z])", "\\1 <\\2", text)
 
+    text = re.sub(r"<tr-hint\s+v=\"(.*?)\"\s*>(.*?)</tr-hint>", deserialize_tr_hint, text)
     text = re.sub(r"<md-heading\s+v=\"(.*?)\"\s*>(.*?)</md-heading>", "\\1 \\2", text)
     text = re.sub(r"<md-list\s+v=\"(.*?)\"\s*>(.*?)</md-list>", "\\1 \\2", text)
     text = re.sub(r"<md-it>(.*?)</md-it>", "*\\1*", text)
     text = re.sub(r"<md-strong>(.*?)</md-strong>", "**\\1**", text)
+    text = re.sub(r"<md-code>(.*?)</md-code>", "`\\1`", text)
     text = re.sub(r"<md-strong-it>(.*?)</md-strong-it>", "***\\1***", text)
     text = re.sub(r"<md-link\s+href=\"(.*?)\"\s*>(.*?)</md-link>", deserialize_md_link, text)
     text = re.sub(r"<md-link>(.*?)</md-link>", deserialize_md_link, text)
@@ -73,6 +84,8 @@ def serialize_plaintext(text):
     # we ignore everything inside backticks
 
     text = re.sub(r"`(.*?)`", serialize_code, text)
+    text = re.sub(r"<tr-hint\s+v=\"(.*?)\"\s*>(.*?)</tr-hint>", serialize_tr_hint, text)
+
     # we ignore everything inside unescaped brackets ({...})
     text = re.sub(r"^(.*?)((?:(?!\\)\{)+)(.*?)((?:(?!\\)\})+)", serialize_ignore, text)
     # we replace Markdown headings
