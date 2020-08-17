@@ -9,11 +9,14 @@ def serialize_code(match):
     return f"<code>{match.group(1)}</code>"
 
 def serialize_ignore(match):
-    # brackets don't match
-    if not len(match.group(1)) == len(match.group(3)):
+    # brackets don't match, we ignore this
+    if len(match.group(2)) != len(match.group(4)):
         return match.group(0)
-    bi = base64.urlsafe_b64encode(match.group(0).encode("utf-8")).decode("ascii")
-    return f"<ignore v=\"{bi}\" />"
+    # we don't replace anything that's already inside an HTML tag
+    if re.match(r".*?<[^>]*$", match.group(1)):
+        return match.group(0)
+    bi = base64.urlsafe_b64encode((match.group(2)+match.group(3)+match.group(4)).encode("utf-8")).decode("ascii")
+    return f"{match.group(1)}<ignore v=\"{bi}\" />"
 
 def deserialize_ignore(match):
     bs = base64.urlsafe_b64decode(match.group(1)).decode("utf-8")
@@ -68,9 +71,10 @@ def serialize_text(text):
 
 def serialize_plaintext(text):
     # we ignore everything inside backticks
+
     text = re.sub(r"`(.*?)`", serialize_code, text)
     # we ignore everything inside unescaped brackets ({...})
-    text = re.sub(r"((?:(?!\\)\{)+)(.*?)((?:(?!\\)\})+)", serialize_ignore, text)
+    text = re.sub(r"^(.*?)((?:(?!\\)\{)+)(.*?)((?:(?!\\)\})+)", serialize_ignore, text)
     # we replace Markdown headings
     text = re.sub(r"^(\#+)\s*(.*?)$", "<md-heading v=\"\\1\">\\2</md-heading>", text, re.MULTILINE)
     # we replace Markdown list elements
