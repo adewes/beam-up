@@ -40,8 +40,9 @@ def deserialize_text(text):
     Undoes what the serialization did below.
     """
 
-    # sometimes space after HTML tags gets removed, we fix that here
-    text = re.sub(r"</([a-zA-Z\-]+)>([^$\.\;\<\n\s])", "</\\1> \\2", text)
+    # sometimes space after/before XML tags gets removed, we fix that here
+    text = re.sub(r"</([a-zA-Z\-]+)>([^$\.\;\<\n\s\(\)\]\[])", "</\\1> \\2", text)
+    text = re.sub(r"([\.\;\)a-zA-Z0-9])<([a-zA-Z])", "\\1 <\\2", text)
 
     text = re.sub(r"<md-heading\s+v=\"(.*?)\"\s*>(.*?)</md-heading>", "\\1 \\2", text)
     text = re.sub(r"<md-list\s+v=\"(.*?)\"\s*>(.*?)</md-list>", "\\1 \\2", text)
@@ -63,25 +64,7 @@ def serialize_text(text):
     Currently, this replaces both common Markdown directives and some Jinja
     directives that might get in the way of a proper translation.
     """
-    # ignore Jinja filters and JS/Python styled string formatting directives
-    replaced_text = ""
-    remaining_text = text
-    while remaining_text:
-        # this is a really simple HTML tag detector. It assumes that no
-        # unescaped '<' characters occur in the source code, which is usually
-        # a reasonable assumption. This is not a standard-compliant HTML parser!
-        match = re.match(r"^([^<]*?)((?!\\)<.*?(?!\\)>)", remaining_text)
-        if match:
-            plaintext = match.group(1)
-            html = match.group(2)
-            if plaintext:
-                replaced_text += serialize_plaintext(plaintext)
-            replaced_text += html
-            remaining_text = remaining_text[len(match.group(0)):]
-        else:
-            replaced_text += serialize_plaintext(remaining_text)
-            break
-    return replaced_text
+    return serialize_plaintext(text)
 
 def serialize_plaintext(text):
     # we ignore everything inside backticks
@@ -89,9 +72,9 @@ def serialize_plaintext(text):
     # we ignore everything inside unescaped brackets ({...})
     text = re.sub(r"((?:(?!\\)\{)+)(.*?)((?:(?!\\)\})+)", serialize_ignore, text)
     # we replace Markdown headings
-    text = re.sub(r"^(\#+)\s*(.+?)(\n|$)", "<md-heading v=\"\\1\">\\2</md-heading>\\3", text, re.MULTILINE)
+    text = re.sub(r"^(\#+)\s*(.*?)$", "<md-heading v=\"\\1\">\\2</md-heading>", text, re.MULTILINE)
     # we replace Markdown list elements
-    text = re.sub(r"^(\s*\*|\-|\d+\.)\s+(.+?)(\n|$)", "<md-list v=\"\\1\">\\2</md-list>\\3", text, re.MULTILINE)
+    text = re.sub(r"^(\s*\*|\-|\d+\.)\s+(.*?)$", "<md-list v=\"\\1\">\\2</md-list>", text, re.MULTILINE)
     # we replace strong, italicized and strong italicized text
     text = re.sub(r"(?:(?![\\])\*){3}([^\*\n]+)(?:(?![\\])\*){3}", "<md-strong-it>\\1</md-strong-it>", text)
     text = re.sub(r"(?:(?![\\])\*){2}([^\*\n]+)(?:(?![\\])\*){2}", "<md-strong>\\1</md-strong>", text)

@@ -73,7 +73,7 @@ def translate(text, source_language, target_language, token):
         # formality currently doesn't work for Chinese, Spanish and Japanese
         # To do: Regularly check if this is still true...
         "formality": "more" if target_language not in ['es', 'zh', 'ja'] else "default",
-        "ignore_tags": "ignore,code",
+        "ignore_tags": "ignore,code,tr-ignore",
         "tag_handling": "xml",
         })
     if response.status_code != 200:
