@@ -127,17 +127,17 @@ def translate_file(token, site_path, destination_path, source_language, target_l
     with open(destination_path, "w") as output_file:
         output_file.write("# Warning, this is an auto-generated file, do not modify!\n" +
                           f"# Modify this file instead: {os.path.relpath(site_path, os.path.dirname(destination_path))}\n")
-        output_file.write(yaml.dump(transformed_data, indent=2, sort_keys=True, width=60))
+        output_file.write(yaml.dump(transformed_data, indent=2, sort_keys=True, width=40))
 
     if clean:
         cache.clean()
 
 
-def translate_config(token, src_path, clean=False):
+def translate_config(token, src_path, site_name="site-all.yml", clean=False):
 
     source_language, target_languages = get_source_and_target_languages(src_path, exclude_source=False)
 
-    site_path = os.path.join(src_path, "site-all.yml")
+    site_path = os.path.join(src_path, site_name)
     if not os.path.exists(site_path):
         logger.fatal("Master file does not exist!")
         exit(-1)

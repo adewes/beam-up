@@ -21,6 +21,7 @@ class BaseProcessor(object):
         return self.site.full_href(language, href)
 
     def __init__(self, site, params, language):
+        self.plaintext = False
         self.site = site
         self.params = params
         self.language = language

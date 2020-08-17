@@ -121,7 +121,8 @@ class PagesBuilder(BaseBuilder):
         #we update the slugs for the child pages
         for name, slug in new_slugs.items():
             page = page_index[name]
+            extension = page.get('extension', 'html')
             page['slug'] = slug
-            page['dst'] = self.site.get_dst(slug, language)
-            page['link'] = self.site.get_link_dst(slug, language)
+            page['dst'] = self.site.get_dst(slug, language, extension=extension)
+            page['link'] = self.site.get_link_dst(slug, language, extension=extension)
         return pages
