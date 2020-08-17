@@ -6,6 +6,7 @@ import importlib
 import logging
 import copy
 import os
+import re
 
 from beam.config import load_config
 
@@ -105,7 +106,15 @@ class Site(object):
             if fallback:
                 return self.translate(language, fallback, *args, **kwargs)
             return "[no translation for language {} and key {}]".format(language, key)
-        return cv[language].format(*args, **kwargs)
+        text = cv[language].format(*args, **kwargs)
+        #  if there are <tr-snip> tags, we only return the text within them.
+        if re.match(r".*<tr-snip>", text):
+            snippets = []
+            for m in re.finditer(r"<tr-snip>([^<]+?)</tr-snip>", text):
+                snippets.append(m.group(1).strip())
+            return " ".join(snippets)
+        return text
+
 
     def get_language_prefix(self, language):
         return self.config['languages'][language].get('prefix', language)
