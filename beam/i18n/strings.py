@@ -35,13 +35,12 @@ def translate_data(token, data, source_language, target_language, parent=None):
                     logger.debug(f"Ignoring translation for key '{full_key}' to language '{target_language}'...")
                     continue
                 # we check if we already translated this...
-                if source_language in _t:
-                    if _t[source_language] == source_hash and target_language in value:
-                        logger.debug(f"Hash still ok for key '{full_key}', skipping...")
-                        continue
+                if target_language in _t and _t[target_language] == source_hash:
+                    logger.debug(f"Hash still ok for key '{full_key}', skipping...")
+                    continue
                 # we remember the hash of the source text, so we don't translate
                 # it again un-necessarily...
-                _t[source_language] = source_hash
+                _t[target_language] = source_hash
                 print(f"Translating '{full_key}' from '{source_language}' to '{target_language}'")
                 count += len(source_text)
                 value[target_language] = deserialize_text(translate(source_text, source_language, target_language, token))
