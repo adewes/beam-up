@@ -69,6 +69,9 @@ def translate(text, source_language, target_language, token):
         "text": text,
         "source_lang": source_language,
         "target_lang": target_language,
+        "preserve_formatting": "0",
+        "formality": "more",
+        "ignore_tags": "ignore,code",
         "tag_handling": "xml",
         })
     if response.status_code != 200:

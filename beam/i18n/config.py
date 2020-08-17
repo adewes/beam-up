@@ -100,10 +100,9 @@ def slugify(key, value, data, context):
         return re.sub(r"[^a-z\-]", "", data["name"].lower().replace(" ", "-"))
     return title
 
-def translate_file(token, site_path, destination_path, source_language, target_language, clean=False):
+def translate_file(token, site_path, destination_path, source_language, target_language, cache):
     count = 0
     source_data = load_config(site_path, with_data=False)
-    cache = FileCache(site_path+".trans")
 
     filters = {
         't' : lambda key, value, data, context: value if source_language == target_language else deserialize_text(cached_translate(serialize_text(value), source_language, target_language, cache, token)),
@@ -129,9 +128,6 @@ def translate_file(token, site_path, destination_path, source_language, target_l
                           f"# Modify this file instead: {os.path.relpath(site_path, os.path.dirname(destination_path))}\n")
         output_file.write(yaml.dump(transformed_data, indent=2, sort_keys=True, width=40))
 
-    if clean:
-        cache.clean()
-
 
 def translate_config(token, src_path, site_name="site-all.yml", clean=False):
 
@@ -142,8 +138,13 @@ def translate_config(token, src_path, site_name="site-all.yml", clean=False):
         logger.fatal("Master file does not exist!")
         exit(-1)
     logger.info(f"Translating file '{site_path}' from '{source_language}' to '{', '.join(target_languages)}'...")
+
+    cache = FileCache(site_path+".trans")
+
     for target_language in target_languages:
         destination_path = os.path.join(src_path, f"site-{target_language}.yml")
-        count = translate_file(token, site_path, destination_path, source_language, target_language, clean=clean)
+        count = translate_file(token, site_path, destination_path, source_language, target_language, cache)
         if count:
             logger.info(f"Translated {count} characters in file {site_path}")
+    if clean:
+        cache.clean()
