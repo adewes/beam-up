@@ -108,10 +108,14 @@ class Site(object):
             return "[no translation for language {} and key {}]".format(language, key)
         text = cv[language].format(*args, **kwargs)
         #  if there are <tr-snip> tags, we only return the text within them.
-        if re.match(r".*<tr-snip>", text):
+        snippet=kwargs.get("snippet", None)
+        if re.match(r".*<tr-snip([^>]*)>", text):
             snippets = []
-            for m in re.finditer(r"<tr-snip>([^<]+?)</tr-snip>", text):
-                snippets.append(m.group(1).strip())
+            for m in re.finditer(r"<tr-snip(?:i=\"(\d+)\")?>([^<]+?)</tr-snip>", text):
+                if snippet is not None and m.group(1):
+                    if snippet != int(m.group(1)):
+                        continue
+                snippets.append(m.group(2).strip())
             return " ".join(snippets)
         return text
 
