@@ -4,6 +4,7 @@ from collections import defaultdict
 from urllib.parse import quote
 
 import logging
+import yaml
 import markdown2
 import textwrap
 import os
@@ -54,6 +55,9 @@ class JinjaProcessor(BaseProcessor):
         if strip:
             code = code.strip()
         return highlight(code, lexer, HtmlFormatter(style=style, cssclass='{}'.format(style_name)))
+
+    def toyaml(self, code, *args, **kwargs):
+        return yaml.dump(code, *args, **kwargs)
 
     def picture(self, filename, prefs=['webp', 'png', 'jpeg'], sizes='50vw', **kwargs):
         file_path = self.file(filename)
@@ -141,6 +145,7 @@ class JinjaProcessor(BaseProcessor):
 
         # we add some useful filters
         env.filters['href'] = self.href
+        env.filters['toyaml'] = self.toyaml
         env.filters['full_href'] = self.full_href
         env.filters['file'] = self.file
         env.filters['markdown'] = self.markdown
