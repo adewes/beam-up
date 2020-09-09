@@ -22,8 +22,8 @@ class FileCache:
             self.tr = {}
 
     def write(self):
-        with open(self.filename, 'w') as output_file:
-            output_file.write(yaml.dump(self.tr, indent=2, sort_keys=True, width=60))
+        with open(self.filename, 'wb') as output_file:
+            output_file.write(yaml.dump(self.tr, indent=2, sort_keys=True, width=60, allow_unicode=True, encoding="utf-8"))
 
     def get(self, text, language, source_language=None):
         hh = hash(text)

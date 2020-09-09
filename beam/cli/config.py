@@ -19,5 +19,5 @@ def config(site):
         logger.error("Site configuration not found.")
         return -1
     config = load_config(site)
-    click.echo(yaml.dump(config))
+    click.echo(yaml.dump(config, width=60, indent=2, sort_keys=True, allow_unicode=True, encoding='utf-8').decode('utf-8'))
 

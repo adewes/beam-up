@@ -123,10 +123,10 @@ def translate_file(token, site_path, destination_path, source_language, target_l
         "pwd" : os.path.dirname(site_path),
         }, filters)
     os.makedirs(os.path.dirname(destination_path), exist_ok=True)
-    with open(destination_path, "w") as output_file:
-        output_file.write("# Warning, this is an auto-generated file, do not modify!\n" +
-                          f"# Modify this file instead: {os.path.relpath(site_path, os.path.dirname(destination_path))}\n")
-        output_file.write(yaml.dump(transformed_data, indent=2, sort_keys=True, width=40))
+    with open(destination_path, "wb") as output_file:
+        output_file.write(("# Warning, this is an auto-generated file, do not modify!\n" +
+                          f"# Modify this file instead: {os.path.relpath(site_path, os.path.dirname(destination_path))}\n").encode("utf-8"))
+        output_file.write(yaml.dump(transformed_data, indent=2, sort_keys=True, allow_unicode=True, encoding="utf-8", width=60))
 
 
 def translate_config(token, src_path, site_name="site-all.yml", clean=False):

@@ -58,8 +58,8 @@ def translate_file(token, path, source_language, target_languages):
         data = yaml.load(input_file.read(), Loader=yaml.FullLoader)
     for target_language in target_languages:
         count += translate_data(token, data, source_language, target_language)
-    with open(path, "w") as output_file:
-        output_file.write(yaml.dump(data, indent=2, sort_keys=True))
+    with open(path, "wb") as output_file:
+        output_file.write(yaml.dump(data, width=60, allow_unicode=True, encoding="utf-8", indent=2, sort_keys=True))
     return count
 
 def translate_strings(token, src_path, clean=False):
