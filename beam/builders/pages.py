@@ -66,7 +66,7 @@ class PagesBuilder(BaseBuilder):
             logger.error("An error occured when processing page '{}' in language '{}'"\
                 .format(page['name'], language))
             logger.error(traceback.format_exc())
-            return
+            raise
         self.site.write(output, page['dst'])
 
     def flatten_pages(self, pages):
