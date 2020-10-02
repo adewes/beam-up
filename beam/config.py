@@ -60,9 +60,10 @@ def load_includes(config, include_path, with_data=True):
                 if nd is None:
                     continue
                 if is_list:
-                    if not isinstance(nd, (list, tuple)):
-                        raise ValueError("expected a list or tuple")
-                    nds.extend(nd)
+                    if isinstance(nd, (list, tuple)):
+                        nds.extend(nd)
+                    else:
+                        nds.append(nd)
                 else:
                     if not isinstance(nd, dict):
                         raise ValueError("expected a dictionary")
