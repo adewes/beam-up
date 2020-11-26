@@ -6,7 +6,7 @@ import traceback
 
 from .helpers.hash import hash
 from .helpers.translate import translate, FileCache
-from .helpers.languages import get_source_and_target_languages
+from .helpers.languages import get_all_languages
 from .helpers.serialize import serialize_text, deserialize_text
 
 logging.basicConfig(level=logging.INFO)
@@ -76,11 +76,11 @@ def translate_file(token, source_path, destination_path, source_language, target
 
 def translate_markdown(token, src_path, clean=False, match=None):
     match_path = os.path.abspth(match) if match is not None else None
-    source_language, target_languages = get_source_and_target_languages(src_path)
 
-    logger.info(f"Translating from '{source_language}' to '{', '.join(target_languages)}'...")
-    language_src_path = os.path.join(src_path, source_language)
-    for root, dirs, files in os.walk(language_src_path):
+    all_languages = get_all_languages(src_path)
+
+    logger.info(f"Translating Markdown files between '{', '.join(all_languages)}'...")
+    for root, dirs, files in os.walk(src_path):
         for filename in files:
             if filename.endswith(".md"):
                 source_path = os.path.join(root, filename)
@@ -88,9 +88,14 @@ def translate_markdown(token, src_path, clean=False, match=None):
                     continue
                 elif match_path is not None:
                     print(f"Matched: '{source_path}'")
-                for target_language in target_languages:
-                    destination_path = os.path.join(src_path, target_language,
-                        os.path.relpath(source_path, language_src_path))
-                    count = translate_file(token, source_path, destination_path, source_language, target_language, clean=clean)
+                config_path = source_path+".trans"
+                if not os.path.exists(config_path):
+                    continue
+                doc_source_language = os.path.relpath(source_path, src_path).split("/")[0]
+                for target_language in all_languages:
+                    destination_path = os.path.join(src_path, target_language, os.path.relpath(source_path, os.path.join(src_path, doc_source_language)))
+                    if destination_path == source_path:
+                        continue
+                    count = translate_file(token, source_path, destination_path, doc_source_language, target_language, clean=clean)
                     if count:
                         print(f"Translated {count} characters in file {source_path}")

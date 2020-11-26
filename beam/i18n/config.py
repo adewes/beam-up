@@ -131,13 +131,13 @@ def translate_file(token, site_path, destination_path, source_language, target_l
 
 def translate_config(token, src_path, site_name="site-all.yml", clean=False):
 
-    source_language, target_languages = get_source_and_target_languages(src_path, exclude_source=False)
+    source_language, target_languages = get_source_and_target_languages(src_path, "config", exclude_source=False)
 
     site_path = os.path.join(src_path, site_name)
     if not os.path.exists(site_path):
         logger.fatal("Master file does not exist!")
         exit(-1)
-    logger.info(f"Translating file '{site_path}' from '{source_language}' to '{', '.join(target_languages)}'...")
+    logger.info(f"Translating config file '{site_path}' from '{source_language}' to '{', '.join(target_languages)}'...")
 
     cache = FileCache(site_path+".trans")
 

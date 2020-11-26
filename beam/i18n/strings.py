@@ -34,6 +34,7 @@ def translate_data(token, data, source_language, target_language, parent=None):
                 if target_language in _i:
                     logger.debug(f"Ignoring translation for key '{full_key}' to language '{target_language}'...")
                     continue
+                _t[source_language] = source_hash
                 # we check if we already translated this...
                 if target_language in _t and _t[target_language] == source_hash:
                     logger.debug(f"Hash still ok for key '{full_key}', skipping...")
@@ -65,9 +66,9 @@ def translate_file(token, path, source_language, target_languages):
 def translate_strings(token, src_path, clean=False):
 
     translations_path = os.path.join(src_path, "translations")
-    source_language, target_languages = get_source_and_target_languages(src_path)
+    source_language, target_languages = get_source_and_target_languages(src_path, "strings")
 
-    logger.info(f"Translating from '{source_language}' to '{', '.join(target_languages)}'...")
+    logger.info(f"Translating strings from '{source_language}' to '{', '.join(target_languages)}'...")
 
     for root, dirs, files in os.walk(translations_path):
         for filename in files:

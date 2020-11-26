@@ -25,6 +25,17 @@ class FileCache:
         with open(self.filename, 'wb') as output_file:
             output_file.write(yaml.dump(self.tr, indent=2, sort_keys=True, width=60, allow_unicode=True, encoding="utf-8"))
 
+    def update_hashes(self, source_language):
+        new_tr = {}
+        for hh, items in self.tr.items():
+            lang_item = items.get(source_language)
+            if not lang_item:
+                continue
+            new_hh = hash(lang_item)
+            new_tr[new_hh] = items
+        self.tr = new_tr
+
+
     def get(self, text, language, source_language=None):
         hh = hash(text)
         self.used.add(f"{hh}")
@@ -72,7 +83,7 @@ def translate(text, source_language, target_language, token):
         "preserve_formatting": "0",
         # formality currently doesn't work for Chinese, Spanish and Japanese
         # To do: Regularly check if this is still true...
-        "formality": "more" if target_language not in ['es', 'zh', 'ja'] else "default",
+        "formality": "more" if target_language not in ['es', 'zh', 'ja', 'en'] else "default",
         "ignore_tags": "ignore,code,tr-ignore,md-code",
         "tag_handling": "xml",
         })
