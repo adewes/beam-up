@@ -89,7 +89,7 @@ class Site(object):
         if 'builders' in self.config:
             self.settings['builders'].extend(self.config['builders'])
 
-    def translate(self, language, key, fallback=None, *args, **kwargs):
+    def translate(self, language, key, fallback=None, unformatted=False, *args, **kwargs):
         translations = self.translations
         if not isinstance(key, (list, tuple)):
             kc = key.split('.')
@@ -106,7 +106,10 @@ class Site(object):
             if fallback:
                 return self.translate(language, fallback, *args, **kwargs)
             return "[no translation for language {} and key {}]".format(language, key)
-        text = cv[language].format(*args, **kwargs)
+        if not unformatted:
+            text = cv[language].format(*args, **kwargs)
+        else:
+            text = cv[language]
         #  if there are <tr-snip> tags, we only return the text within them.
         snippet=kwargs.get("snippet", None)
         if re.match(r".*<tr-snip([^>]*)>", text):

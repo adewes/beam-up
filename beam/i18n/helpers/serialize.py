@@ -87,11 +87,12 @@ def serialize_plaintext(text):
     text = re.sub(r"<tr-hint\s+v=\"(.*?)\"\s*>(.*?)</tr-hint>", serialize_tr_hint, text)
 
     # we ignore everything inside unescaped brackets ({...})
-    text = re.sub(r"^(.*?)((?:(?!\\)\{)+)(.*?)((?:(?!\\)\})+)", serialize_ignore, text)
+    text = re.sub(r"(.*?)((?:(?!\\)\$)+)(.*?)((?:(?!\\)\$)+)", serialize_ignore, text)
+    text = re.sub(r"(.*?)((?:(?!\\)\{)+)(.*?)((?:(?!\\)\})+)", serialize_ignore, text)
     # we replace Markdown headings
-    text = re.sub(r"^(\#+)\s*(.*?)$", "<md-heading v=\"\\1\">\\2</md-heading>", text, re.MULTILINE)
+    text = re.sub(r"(\#+)\s*(.*?)$", "<md-heading v=\"\\1\">\\2</md-heading>", text, re.MULTILINE)
     # we replace Markdown list elements
-    text = re.sub(r"^(\s*\*|\-|\d+\.)\s+(.*?)$", "<md-list v=\"\\1\">\\2</md-list>", text, re.MULTILINE)
+    text = re.sub(r"(\s*\*|\-|\d+\.)\s+(.*?)$", "<md-list v=\"\\1\">\\2</md-list>", text, re.MULTILINE)
     # we replace strong, italicized and strong italicized text
     text = re.sub(r"(?:(?![\\])\*){3}([^\*\n]+)(?:(?![\\])\*){3}", "<md-strong-it>\\1</md-strong-it>", text)
     text = re.sub(r"(?:(?![\\])\*){2}([^\*\n]+)(?:(?![\\])\*){2}", "<md-strong>\\1</md-strong>", text)
