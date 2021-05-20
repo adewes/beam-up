@@ -29,6 +29,7 @@ def parse_into_blocks(content):
                 code_lines.append(line)
                 blocks.append({'type': 'code', 'code': "\n".join(code_lines)})
                 code_lines = []
+                is_code = False
                 continue
             is_code = not is_code
         if is_code:
