@@ -163,7 +163,7 @@ class JinjaProcessor(BaseProcessor):
             env.filters['highlight_styles'] = self.highlight_styles
         env.filters['translate'] = self.translate
         env.filters['t'] = self.translate
-        env.filters['dt'] = self.direct_translate
+        #env.filters['dt'] = self.direct_translate
         for filters in self.site.addons['jinja-filters']:
             for name, f in filters:
                 env.filters[name] = f
