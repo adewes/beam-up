@@ -21,7 +21,19 @@ def parse_into_blocks(content):
     blocks = []
     ignore_text = ""
     ignore = False
+    is_code = False
+    code_lines = []
     for line in lines:
+        if line.startswith('```'):
+            if is_code:
+                code_lines.append(line)
+                blocks.append({'type': 'code', 'code': "\n".join(code_lines)})
+                code_lines = []
+                continue
+            is_code = not is_code
+        if is_code:
+            code_lines.append(line)
+            continue
         if (not ignore) and re.match(r"^\s*<\!--translate:ignore-->\s*$", line):
             ignore = True
             continue
@@ -71,6 +83,8 @@ def translate_file(token, source_path, destination_path, source_language, target
                 output_file.write(block['translation']+"\n")
             elif block['type'] == 'ignore':
                 output_file.write(block['text']+"\n")
+            elif block['type'] == 'code':
+                output_file.write(block['code']+"\n")
 
     if clean:
         cache.clean()
