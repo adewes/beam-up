@@ -18,6 +18,8 @@ class FileCache:
         if os.path.exists(self.filename):
             with open(self.filename) as input_file:
                 self.tr = yaml.load(input_file.read(), Loader=yaml.BaseLoader)
+            if not self.tr:
+                self.tr = {}
         else:
             self.tr = {}
 

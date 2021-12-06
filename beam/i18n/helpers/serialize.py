@@ -27,14 +27,16 @@ def serialize_md_link(match):
         bi = base64.urlsafe_b64encode(match.group(2).encode("utf-8")).decode("ascii")
         return f"<md-link href=\"{bi}\">{match.group(1)}</md-link>"
     else:
-        return f"<md-link>{match.group(1)}</md-link>"
+        bi = base64.urlsafe_b64encode(match.group(1).encode("utf-8")).decode("ascii")
+        return f"<md-link href=\"{bi}\" literal>{match.group(1)}</md-link>"
 
 def deserialize_md_link(match):
-    if len(match.groups()) == 2:
+    if len(match.groups()) == 3:
+        bs = base64.urlsafe_b64decode(match.group(1)).decode("utf-8")
+        return f"[{bs}]"
+    else:
         bs = base64.urlsafe_b64decode(match.group(1)).decode("utf-8")
         return f"[{match.group(2)}]({bs})"
-    else:
-        return f"[{match.group(1)}]"
     return bs
 
 def serialize_tr_hint(match):
@@ -63,8 +65,8 @@ def deserialize_text(text):
     text = re.sub(r"<md-strong>(.*?)</md-strong>", "**\\1**", text)
     text = re.sub(r"<md-code>(.*?)</md-code>", "`\\1`", text)
     text = re.sub(r"<md-strong-it>(.*?)</md-strong-it>", "***\\1***", text)
+    text = re.sub(r"<md-link\s+href=\"(.*?)\"\s+(literal)>(.*?)</md-link>", deserialize_md_link, text)
     text = re.sub(r"<md-link\s+href=\"(.*?)\"\s*>(.*?)</md-link>", deserialize_md_link, text)
-    text = re.sub(r"<md-link>(.*?)</md-link>", deserialize_md_link, text)
     # ignore needs to be deserialized last, as it can occur encoded e.g. in a
     # markdown link that was converted itself...
     text = re.sub(r"<ignore\s+v=\"(.*?)\"\s*/>", deserialize_ignore, text)
