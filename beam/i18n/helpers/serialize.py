@@ -6,7 +6,12 @@ def serialize_code(match):
     We retain the original value inside because it can provide meaningful context
     to the translation API. However, we ignore the translated value.
     """
-    return f"<md-code>{match.group(1)}</md-code>"
+    bi = base64.urlsafe_b64encode((match.group(0)).encode("utf-8")).decode("ascii")
+    return f"<md-code v=\"{bi}\" />"
+
+def deserialize_code(match):
+    bs = base64.urlsafe_b64decode(match.group(1)).decode("utf-8")
+    return bs
 
 def serialize_ignore(match):
     # brackets don't match, we ignore this
@@ -63,7 +68,7 @@ def deserialize_text(text):
     text = re.sub(r"<md-list\s+v=\"(.*?)\"\s*>(.*?)</md-list>", "\\1 \\2", text)
     text = re.sub(r"<md-it>(.*?)</md-it>", "*\\1*", text)
     text = re.sub(r"<md-strong>(.*?)</md-strong>", "**\\1**", text)
-    text = re.sub(r"<md-code>(.*?)</md-code>", "`\\1`", text)
+    text = re.sub(r"<md-code\s+v=\"(.*?)\"\s*/>", deserialize_code, text)
     text = re.sub(r"<md-strong-it>(.*?)</md-strong-it>", "***\\1***", text)
     text = re.sub(r"<md-link\s+href=\"(.*?)\"\s+(literal)>(.*?)</md-link>", deserialize_md_link, text)
     text = re.sub(r"<md-link\s+href=\"(.*?)\"\s*>(.*?)</md-link>", deserialize_md_link, text)
@@ -85,15 +90,16 @@ def serialize_text(text):
 def serialize_plaintext(text):
     # we ignore everything inside backticks
 
-    text = re.sub(r"`(.*?)`", serialize_code, text)
+    text = re.sub(r"`.*?`", serialize_code, text)
     text = re.sub(r"<tr-hint\s+v=\"(.*?)\"\s*>(.*?)</tr-hint>", serialize_tr_hint, text)
 
     # we ignore everything inside unescaped brackets ({...})
-    text = re.sub(r"^(.*?)((?:(?!\\)\{)+)(.*?)((?:(?!\\)\})+)", serialize_ignore, text)
+    text = re.sub(r"(.*?)((?:(?!\\)\$)+)(.*?)((?:(?!\\)\$)+)", serialize_ignore, text)
+    text = re.sub(r"(.*?)((?:(?!\\)\{)+)(.*?)((?:(?!\\)\})+)", serialize_ignore, text)
     # we replace Markdown headings
-    text = re.sub(r"^(\#+)\s*(.*?)$", "<md-heading v=\"\\1\">\\2</md-heading>", text, re.MULTILINE)
+    text = re.sub(r"(?:\n|^)(\#+)\s*(.*?)$", "<md-heading v=\"\\1\">\\2</md-heading>", text, re.MULTILINE)
     # we replace Markdown list elements
-    text = re.sub(r"^(\s*\*|\-|\d+\.)\s+(.*?)$", "<md-list v=\"\\1\">\\2</md-list>", text, re.MULTILINE)
+    text = re.sub(r"(?:\n|^)(\s*\*|\-|\d+\.)\s+(.*?)$", "<md-list v=\"\\1\">\\2</md-list>", text, re.MULTILINE)
     # we replace strong, italicized and strong italicized text
     text = re.sub(r"(?:(?![\\])\*){3}([^\*\n]+)(?:(?![\\])\*){3}", "<md-strong-it>\\1</md-strong-it>", text)
     text = re.sub(r"(?:(?![\\])\*){2}([^\*\n]+)(?:(?![\\])\*){2}", "<md-strong>\\1</md-strong>", text)

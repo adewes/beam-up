@@ -39,13 +39,20 @@ except ImportError:
 
 class JinjaProcessor(BaseProcessor):
 
-    def highlight_styles(self, code, style_name=None):
+    def highlight_styles(self, code, style_name=None, style_class=None):
+        if style_class is None:
+            style_class = self.site.config.get('pygments', {}).get('class', 'highlight')
+        explicit = True
         if style_name is None:
+            explicit = False
             style_name = self.site.config.get('pygments', {}).get('style', 'monokai')
         style = get_style_by_name(style_name)
-        return '<style type="text/css">{}</style>'.format(HtmlFormatter(style=style).get_style_defs('.highlight .{}'.format(style_name)))
+        class_name = f'.{style_class}'
+        if explicit:
+            class_name += f' .{style_name}'
+        return '<style type="text/css">{}</style>'.format(HtmlFormatter(style=style).get_style_defs(class_name))
 
-    def highlight(self, code, language='python', style_name=None, strip=True, deindent=True):
+    def highlight(self, code, language='python', style_name=None, style_class=None, strip=True, deindent=True):
         if style_name is None:
             style_name = self.site.config.get('pygments', {}).get('style', 'monokai')
         lexer = get_lexer_by_name(language)
@@ -54,7 +61,7 @@ class JinjaProcessor(BaseProcessor):
             code = textwrap.dedent(code)
         if strip:
             code = code.strip()
-        return highlight(code, lexer, HtmlFormatter(style=style, cssclass='{}'.format(style_name)))
+        return highlight(code, lexer, HtmlFormatter(style=style, cssclass=f'{style_name}'))
 
     def toyaml(self, code, *args, **kwargs):
         return yaml.dump(code, *args, **kwargs)
@@ -155,6 +162,8 @@ class JinjaProcessor(BaseProcessor):
             env.filters['highlight'] = self.highlight
             env.filters['highlight_styles'] = self.highlight_styles
         env.filters['translate'] = self.translate
+        env.filters['t'] = self.translate
+        #env.filters['dt'] = self.direct_translate
         for filters in self.site.addons['jinja-filters']:
             for name, f in filters:
                 env.filters[name] = f

@@ -21,7 +21,20 @@ def parse_into_blocks(content):
     blocks = []
     ignore_text = ""
     ignore = False
+    is_code = False
+    code_lines = []
     for line in lines:
+        if line.startswith('```'):
+            if is_code:
+                code_lines.append(line)
+                blocks.append({'type': 'code', 'code': "\n".join(code_lines)})
+                code_lines = []
+                is_code = False
+                continue
+            is_code = not is_code
+        if is_code:
+            code_lines.append(line)
+            continue
         if (not ignore) and re.match(r"^\s*<\!--translate:ignore-->\s*$", line):
             ignore = True
             continue
@@ -49,14 +62,17 @@ def translate_file(token, source_path, destination_path, source_language, target
 
     for i, block in enumerate(blocks):
         if block['type'] == 'text':
-            source_text = serialize_text(block['text'])
+            source_text = block['text']
             existing_translation = cache.get(source_text, target_language, source_language=source_language)
+            if existing_translation is None:
+                # included for backwards-compatibility
+                existing_translation = cache.get(serialize_text(source_text), target_language, source_language=source_language)
             if existing_translation is not None:
                 # we already have translated this block
                 block['translation'] = existing_translation
                 continue
             count += len(source_text)
-            translation = deserialize_text(translate(source_text, source_language, target_language, token))
+            translation = deserialize_text(translate(serialize_text(source_text), source_language, target_language, token))
             cache.set(source_text, target_language, translation, source_language=source_language)
             block['translation'] = translation
 
@@ -68,6 +84,8 @@ def translate_file(token, source_path, destination_path, source_language, target
                 output_file.write(block['translation']+"\n")
             elif block['type'] == 'ignore':
                 output_file.write(block['text']+"\n")
+            elif block['type'] == 'code':
+                output_file.write(block['code']+"\n")
 
     if clean:
         cache.clean()

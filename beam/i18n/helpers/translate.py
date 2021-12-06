@@ -17,9 +17,11 @@ class FileCache:
     def read(self):
         if os.path.exists(self.filename):
             with open(self.filename) as input_file:
-                self.tr = yaml.load(input_file.read(), Loader=yaml.BaseLoader)
-            if not self.tr:
-                self.tr = {}
+                content = input_file.read()
+                if content.strip() == "": # we ignore empty files
+                    self.tr = {}
+                else:
+                    self.tr = yaml.load(content, Loader=yaml.BaseLoader)
         else:
             self.tr = {}
 
