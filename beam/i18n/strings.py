@@ -57,6 +57,11 @@ def translate_file(token, path, source_language, target_languages):
     count = 0
     with open(path) as input_file:
         data = yaml.load(input_file.read(), Loader=yaml.FullLoader)
+    if '_t' in data:
+        if 'source' in data['_t']:
+            if source_language != data['_t']['source']:
+                target_languages += [source_language]
+                source_language = data['_t']['source']
     for target_language in target_languages:
         count += translate_data(token, data, source_language, target_language)
     with open(path, "wb") as output_file:
