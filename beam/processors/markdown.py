@@ -21,7 +21,7 @@ class MarkdownProcessor(BaseProcessor):
                 if line.startswith('#'):
                     line = '#'*offset+line
                 input += line + "\n"
-        result = markdown2.markdown(input, extras=['footnotes','fenced-code-blocks'])
+        result = markdown2.markdown(input, extras=['footnotes','fenced-code-blocks', 'mermaid'])
         if self.params.get('bare'):
             return result
         template_filename = self.params.get('template', self.site.config.get('markdown', {}).get('template', 'markdown.html'))
